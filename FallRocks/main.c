@@ -1,20 +1,37 @@
 #include "raylib.h"
+#include <stdlib.h>
 
 int main(void)
 {
-	int screenWidth = GetScreenWidth();
-	int screenHeight = GetScreenHeight();
+	int screenWidth = GetMonitorWidth(GetCurrentMonitor());
+	int screenHeight = GetMonitorHeight(GetCurrentMonitor());
 	InitWindow(screenWidth, screenHeight, "FallRocks");
 
-    while (!WindowShouldClose())
-    {
-        BeginDrawing();
-            ClearBackground(RAYWHITE);
-            DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
-        EndDrawing();
-    }
+	MaximizeWindow();
 
-    CloseWindow();
+	int cor = 0;
 
-    return 0;
+	Vector2 rectanglePosition = { GetScreenWidth()/2.f, GetScreenHeight()/2.f };
+	Vector2 size = {50, 100};
+	SetTargetFPS(60);
+
+	while (!WindowShouldClose())
+	{
+	if (IsKeyDown(KEY_RIGHT)) rectanglePosition.x += 4.0f;
+	if (IsKeyDown(KEY_LEFT)) rectanglePosition.x -= 4.0f;
+	if (IsKeyDown(KEY_UP)) rectanglePosition.y -= 4.0f;
+	if (IsKeyDown(KEY_DOWN)) rectanglePosition.y += 4.0f;
+
+	BeginDrawing();
+		ClearBackground(RAYWHITE);
+			if (rand() > RAND_MAX/2)
+				DrawRectangleV(rectanglePosition, size, MAGENTA);
+			else 
+				DrawRectangleV(rectanglePosition, size, RED);
+		EndDrawing();
+	}
+
+	CloseWindow();
+
+	return 0;
 }
