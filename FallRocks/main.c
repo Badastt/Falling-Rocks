@@ -5,29 +5,35 @@ int main(void)
 {
 	int screenWidth = GetMonitorWidth(GetCurrentMonitor());
 	int screenHeight = GetMonitorHeight(GetCurrentMonitor());
-	InitWindow(screenWidth, screenHeight, "FallRocks");
-
-	MaximizeWindow();
-
-	int cor = 0;
-
-	Vector2 rectanglePosition = { GetScreenWidth()/2.f, GetScreenHeight()/2.f };
-	Vector2 size = {50, 100};
+	InitWindow(1200, 1000, "FallRocks");
+	
+	bool Jump;
+	int JumpTimer;
+	
+	Vector2 RillPosition = {350.0f, 250.0f};
+	Vector2 RillSize = {60, 120};
+	//Rectangle frameRec = { 0.0f, 0.0f, (float)Rill.width/5, (float)Rill.height};
+	
 	SetTargetFPS(60);
+	
+	Rectangle floor = {0, 900, 2000, 80};
+	
+	bool onFloor = CheckCollisionPointRec (RillPosition, floor);
 
 	while (!WindowShouldClose())
 	{
-	if (IsKeyDown(KEY_RIGHT)) rectanglePosition.x += 4.0f;
-	if (IsKeyDown(KEY_LEFT)) rectanglePosition.x -= 4.0f;
-	if (IsKeyDown(KEY_UP)) rectanglePosition.y -= 4.0f;
-	if (IsKeyDown(KEY_DOWN)) rectanglePosition.y += 4.0f;
+		
+		if (IsKeyDown(KEY_RIGHT)) RillPosition.x += 8.0f;
+		if (IsKeyDown(KEY_LEFT)) RillPosition.x -= 8.0f;
+		
+		
+		if (!onFloor) RillPosition.y += 1.0f;
+		else {Jump = false; JumpTimer = 0;}
 
-	BeginDrawing();
-		ClearBackground(RAYWHITE);
-			if (rand() > RAND_MAX/2)
-				DrawRectangleV(rectanglePosition, size, MAGENTA);
-			else 
-				DrawRectangleV(rectanglePosition, size, RED);
+		BeginDrawing();
+		ClearBackground(WHITE);
+			DrawRectangleRec(floor, BLACK);
+			DrawRectangleV(RillPosition, RillSize, BLACK);
 		EndDrawing();
 	}
 
