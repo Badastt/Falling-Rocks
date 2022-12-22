@@ -2,13 +2,29 @@
 #include <stdlib.h>
 
 #define MAX_FPS 60
+#define G 400
+#define PLAYER_JUMP_SPD 350.0f
+#define PLAYER_HOR_SPD 200.0f
 
 typedef struct {
 	Vector2 position;
 	Vector2 size;
+	double speed;
+	bool canJump;
+	bool jumping;
+	int jumpTimer;
 	Texture2D texture;
 	Rectangle frameRec;
 } Player;
+
+
+typedef struct{
+    Rectangle rect;
+    int blocking;
+    Color color;
+} EnvItem;
+
+void UpdatePlayer(Player *player, EnvItem *envItems, int envItemsLength, float delta);
 
 int main(void)
 {
@@ -16,34 +32,40 @@ int main(void)
 	int screenHeight = 768;
 	InitWindow(1366, 768, "FallRocks");
 	
-	Player Rill = {{screenWidth/2, screenHeight/2}, {32, 32}, LoadTexture("data/Rill3.png"), {0.0f, 0.0f, (float)Rill.texture.width/1, (float)Rill.texture.height/1}};
+	Player Rill = {0};
+	Rill.position = (Vector2){screenWidth/2 - 100, screenHeight/2 - 100};
+	Rill.size = (Vector2){32, 32};
+	Rill.speed = 0;
+	Rill.canJump = false;
+	Rill.texture = LoadTexture("data/Rill3.png");
+	Rill.frameRec = (Rectangle){0.0f, 0.0f, (double)Rill.texture.width/1, (double)Rill.texture.height/1};
 
-	Camera2D camera = {{Rill.position.x+32, Rill.position.y+32}, (Vector2){screenWidth/2, screenHeight/2}, 0, 3};
+	Camera2D camera = {0};
+	camera.target = Rill.position; //+32
+	camera.offset = (Vector2){screenWidth/2.0f, screenHeight/2.0f};	
+	camera.rotation = 0.0f;
+	camera.zoom = 2.0f;
 
-	bool Jump;
-	bool canJump;
-	int JumpTimer = 0;
-	unsigned int frameCounter = 0;
+	EnvItem envItems[] = {
+        {{ 0, 0, 1000, 400 }, 0, LIGHTGRAY },
+        {{ 0, 400, 1000, 200 }, 1, GRAY },
+        {{ 300, 200, 400, 10 }, 1, GRAY },
+        {{ 250, 300, 100, 10 }, 1, GRAY },
+        {{ 650, 300, 100, 10 }, 1, GRAY }
+    };
 	
+	int envItemsLength = sizeof(envItems)/sizeof(envItems[0]);
+
 	SetTargetFPS(MAX_FPS);
 	
-	Rectangle floor = {0, screenHeight-85, screenWidth, 600};	
-
 	while (!WindowShouldClose())
 	{
-		frameCounter++;
-		frameCounter %= MAX_FPS;
+		float deltaTime = GetFrameTime();
 		camera.target = (Vector2){Rill.position.x+32, Rill.position.y+32};
 
-		bool onFloor = CheckCollisionPointRec ((Vector2){Rill.position.x+Rill.size.x/2, Rill.position.y+Rill.size.y}, floor);
-		
-		if (IsKeyDown(KEY_RIGHT)) Rill.position.x += 4.0f;
-		if (IsKeyDown(KEY_LEFT)) Rill.position.x -= 4.0f;
-		
-		if (Rill.position.y < 0 || Rill.position.y > screenHeight) Rill.position.y = screenHeight/2;
-		if (Rill.position.x < 0 || Rill.position.x > screenWidth) Rill.position.x =screenWidth/2;
-		
-		if (IsKeyDown(KEY_UP) && canJump) 
+		UpdatePlayer (&Rill, envItems, envItemsLength, deltaTime); 
+
+		/*if (IsKeyDown(KEY_UP) && canJump) 
 			Jump = true;
 		else
 			canJump = false;
@@ -57,12 +79,13 @@ int main(void)
 		} else if (!onFloor)
 			Rill.position.y+=6;
 
-		if (onFloor){Jump = false; JumpTimer = 0; canJump = true;}
+		if (onFloor){Jump = false; JumpTimer = 0; canJump = true;}*/
 
 		BeginDrawing();
 		ClearBackground(RAYWHITE);
 		BeginMode2D(camera);
-			DrawRectangleRec(floor, GREEN);
+            for (int i = 0; i < envItemsLength; i++)
+				DrawRectangleRec(envItems[i].rect, envItems[i].color);
 			DrawTextureRec(Rill.texture, Rill.frameRec, Rill.position, WHITE);
 		EndMode2D();
 		EndDrawing();
@@ -73,4 +96,48 @@ int main(void)
 	CloseWindow();
 
 	return 0;
+}
+
+void UpdatePlayer(Player *player, EnvItem *envItems, int envItemsLength, float delta)
+{
+    if (IsKeyDown(KEY_LEFT)) player->position.x -= PLAYER_HOR_SPD*delta;
+    if (IsKeyDown(KEY_RIGHT)) player->position.x += PLAYER_HOR_SPD*delta;
+    if (IsKeyDown(KEY_UP) && player->canJump)
+    {
+        player->speed = -PLAYER_JUMP_SPD;
+        player->canJump = false;
+    }
+    
+    if (player->jumping && player->canJump){
+    	player->jumpTimer++;
+    	if (player->jumpTimer < 3)
+    		player->speed = -PLAYER_JUMP_SPD;
+    	else
+    		player->canJump = false;
+    }
+
+    int hitObstacle = 0;
+    for (int i = 0; i < envItemsLength; i++)
+    {
+        EnvItem *ei = envItems + i;
+        Vector2 *p = &(player->position);
+        if (ei->blocking &&
+            ei->rect.x <= p->x &&
+            ei->rect.x + ei->rect.width >= p->x &&
+            ei->rect.y >= p->y+32 &&
+            ei->rect.y <= p->y+32 + player->speed*delta)
+        {
+            hitObstacle = 1;
+            player->speed = 0.0f;
+            p->y = ei->rect.y-32;
+        }
+    }
+
+    if (!hitObstacle)
+    {
+        player->position.y += player->speed*delta;
+        player->speed += G*delta;
+        player->canJump = false;
+    }
+    else player->canJump = true;
 }
