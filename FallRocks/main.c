@@ -68,7 +68,7 @@ int main(void)
 	
 	while (!WindowShouldClose())
 	{
-		float deltaTime = GetFrameTime();
+		//float deltaTime = GetFrameTime();
 		if (frame++ == 60) frame = 0;
 		UpdatePlayer (&Rill, &camera, envItems, envItemsLength);
 		
@@ -109,8 +109,8 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 			player->airTimer = 1;
 			player->speed = -PLAYER_JUMP_SPD;
 		}
-		else if (player->jumpTimer++ >= 24);
-			player->canJump = false;
+		//if (player->jumpTimer++ >= 24);
+		//	player->canJump = false;
     } else {
 		if (player->jumpTimer)
 			player->speed = +1;
