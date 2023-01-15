@@ -38,7 +38,7 @@ int main(void)
 {
 	int screenWidth = GetScreenWidth();
 	int screenHeight = GetScreenHeight();
-	InitWindow(screenWidth, screenHeight, "FallRocks");
+	InitWindow(1366, 768, "FallRocks");
 	
 	if (!IsWindowMaximized())
 		MaximizeWindow();
