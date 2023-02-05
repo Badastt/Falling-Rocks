@@ -3,10 +3,10 @@
 #include <stdio.h>
 
 #define MAX_FPS 60
-#define GRAVITY 1.02
-#define PLAYER_JUMP_SPD 15.0f
-#define PLAYER_HOR_SPD 3.0f
-#define T 8
+#define GRAVITY 0.6
+#define PLAYER_JUMP_SPD 8.0f
+#define PLAYER_HOR_SPD 2.0f
+#define T 6
 
 typedef struct {
 	Vector2 position;
@@ -33,6 +33,11 @@ typedef struct{
 
 void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envItemsLength);
 void Die(Player *player, Camera2D *camera);
+int CheckCollisionUpDown(Player *p, EnvItem *ei);
+int CheckCollisionDownUp(Player *p, EnvItem *ei);
+int CheckCollisionLeftRight(Player *p, EnvItem *ei);
+int CheckCollisionRightLeft(Player *p, EnvItem *ei);
+
 
 int main(void)
 {
@@ -45,23 +50,24 @@ int main(void)
 	
 	Player Rill = {0};
 	Rill.position = (Vector2){0, -32};
+	//Rill.position = (Vector2){1000*T, -32};
 	Rill.size = (Vector2){32, 32};
 	Rill.speed = 0;
 	Rill.canJump = false;
 	Rill.airTimer = 1;
-	Rill.texture = LoadTexture("data/Rill.png");
-	Rill.frameRec = (Rectangle){0.0f, 0.0f, (double)Rill.texture.width/2, (double)Rill.texture.height/1};
+	Rill.texture = LoadTexture("data/RillDebug.png");
+	Rill.frameRec = (Rectangle){0.0f, 0.0f, (double)Rill.texture.width/1, (double)Rill.texture.height/1};
 	Rill.hitObstacleL = 0;
 	Rill.hitObstacleR = 0;
 	Rill.respawnPos = (Vector2){0, -32};
-	//Rill.respawnPos = (Vector2){80*T, -44*T};
+	//Rill.respawnPos = (Vector2){1000*T, -32};
 	Rill.state = 0;
 
 	Camera2D camera = {0};
 	camera.target = Rill.position;
 	camera.offset = (Vector2){1366/2, 768/2};	
 	camera.rotation = 0.0f;
-	camera.zoom = 2.5f;
+	camera.zoom = 4.0f;
 
 	//posX posY width height
 	EnvItem envItems[] = {
@@ -102,6 +108,16 @@ int main(void)
         {{ 63*T, -113*T, 1*T, 63*T }, RED, 'S' },
         {{ 68*T, -94*T, 34*T, 1*T }, RED, 'S' },
         {{ 63*T, -114*T, 35*T, 1*T }, RED, 'S' },
+		{{ 1000*T, 0, 100*T, 1*T}, BROWN, 'F' },
+		{{ 1010*T, -5*T, 10*T, 1*T}, BROWN, 'F' },
+		{{ 1020*T, -6*T, 10*T, 1*T}, BROWN, 'F' },
+		{{ 1030*T, -7*T, 10*T, 1*T}, BROWN, 'F' },
+		{{ 1040*T, -8*T, 10*T, 1*T}, BROWN, 'F' },
+		{{ 1050*T, -9*T, 10*T, 1*T}, BROWN, 'F' },
+		{{ 1060*T, -10*T, 10*T, 1*T}, BROWN, 'F' },
+		{{ 1070*T, -11*T, 10*T, 1*T}, BROWN, 'F' },
+		{{ 1080*T, -12*T, 10*T, 1*T}, BROWN, 'F' },
+		
     };
 	
 	int envItemsLength = sizeof(envItems)/sizeof(envItems[0]);
@@ -184,11 +200,7 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 		Vector2 *p = &(player->position);
 		switch (ei->type){
 			case 'P':
-			if ((ei->rect.x <= p->x+8|| ei->rect.x <= p->x+20)  &&
-				(ei->rect.x + ei->rect.width >= p->x+8 || ei->rect.x + ei->rect.width >= p->x+20) &&
-				ei->rect.y >= p->y+32 &&
-				ei->rect.y <= p->y+32 + player->speed*player->airTimer*GRAVITY)
-			{
+			if (CheckCollisionUpDown(player, ei)){
 				hitObstacle = 1;
 				player->speed = 0.0f;
 				p->y = ei->rect.y-32;
@@ -196,21 +208,13 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 			break;
 			
 			case 'F':
-			if ((ei->rect.x <= p->x+8|| ei->rect.x <= p->x+20)  &&
-				(ei->rect.x + ei->rect.width >= p->x+8 || ei->rect.x + ei->rect.width >= p->x+20) &&
-				ei->rect.y >= p->y+32 &&
-				ei->rect.y <= p->y+32 + player->speed*player->airTimer*GRAVITY)
-			{
+			if (CheckCollisionUpDown(player, ei)){
 				hitObstacle = 1;
 				player->speed = 0.0f;
 				p->y = ei->rect.y-32;
 			}
 			
-			if ((ei->rect.x <= p->x+8|| ei->rect.x <= p->x+20)  &&
-				(ei->rect.x + ei->rect.width >= p->x+8 || ei->rect.x + ei->rect.width >= p->x+20) &&
-				ei->rect.y + ei->rect.height >= p->y &&
-				ei->rect.y + ei->rect.height <= p->y - player->speed*player->airTimer*GRAVITY)
-			{
+			if (CheckCollisionDownUp(player, ei)){
 				hitObstacle = 0;
 				player->jumping = false;
 				player->canJump = false;
@@ -218,38 +222,30 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 				p->y = ei->rect.y + ei->rect.height;
 			}
 			
-			if ((ei->rect.y <= p->y+31 || ei->rect.y <= p->y+16 || ei->rect.y <= p->y) &&
-				(ei->rect.y + ei->rect.height >= p->y+31 || ei->rect.y + ei->rect.height >= p->y) &&
-				ei->rect.x + ei->rect.width >= p->x+8 &&
-				ei->rect.x + ei->rect.width <= p->x+8 - player->speedX)
-			{
-				player->hitObstacleL = 1;
-				p->x = ei->rect.x + ei->rect.width-8;
-			}
-			
-			if ((ei->rect.y <= p->y+31 || ei->rect.y <= p->y+16 || ei->rect.y <= p->y) &&
-				(ei->rect.y + ei->rect.height >= p->y+31 || ei->rect.y + ei->rect.height >= p->y) &&
-				ei->rect.x <= p->x+26 &&
-				ei->rect.x >= p->x+26 - player->speedX)
-			{
+			if (CheckCollisionLeftRight(player, ei)){
 				player->hitObstacleR = 1;
-				p->x = ei->rect.x - 26;
+				p->x = ei->rect.x-28;
 			}
 			
-			if (hitA){
-					if (ei->rect.y <= p->y+16 &&
-						ei->rect.y + ei->rect.height >= p->y+16 &&
-						ei->rect.x + ei->rect.width >= p->x-3 &&
+			if (CheckCollisionRightLeft(player, ei)){
+				player->hitObstacleL = 1;
+				p->x = ei->rect.x + ei->rect.width-4;
+			}
+			
+			if (hitA){ //ARRUMAR
+					if (ei->rect.y <= p->y+22 &&
+						ei->rect.y + ei->rect.height >= p->y+22 &&
+						ei->rect.x + ei->rect.width >= p->x-6 &&
 						p->x+32 >= ei->rect.x + ei->rect.width)
 					{
 						player->state = 1;
 					}
 			}
 		
-			if (hitD){
-				if (ei->rect.y <= p->y+16 &&
-					ei->rect.y + ei->rect.height >= p->y+16 &&
-					p->x+3 <= ei->rect.x &&
+			if (hitD){ //ARRUMAR
+				if (ei->rect.y <= p->y+22 &&
+					ei->rect.y + ei->rect.height >= p->y+22 &&
+					p->x+6 <= ei->rect.x &&
 					p->x+32 >= ei->rect.x)
 				{
 					player->state = 1;
@@ -261,41 +257,25 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 			break;
 			
 			case 'S':
-			if ((ei->rect.x <= p->x+8|| ei->rect.x <= p->x+20)  &&
-				(ei->rect.x + ei->rect.width >= p->x+8 || ei->rect.x + ei->rect.width >= p->x+20) &&
-				ei->rect.y >= p->y+32 &&
-				ei->rect.y <= p->y+32 + player->speed*player->airTimer*GRAVITY)
-			{	
+			if (CheckCollisionUpDown(player, ei)){
 				player->speed = 0;
 				player->speedX = 0;
 				Die(player, camera);
 			}
 			
-			if ((ei->rect.x <= p->x+8|| ei->rect.x <= p->x+20)  &&
-				(ei->rect.x + ei->rect.width >= p->x+8 || ei->rect.x + ei->rect.width >= p->x+20) &&
-				ei->rect.y + ei->rect.height >= p->y &&
-				ei->rect.y + ei->rect.height <= p->y - player->speed*player->airTimer*GRAVITY)
-			{
+			if (CheckCollisionDownUp(player, ei)){
 				player->speed = 0;
 				player->speedX = 0;
 				Die(player, camera);
 			}
 			
-			if ((ei->rect.y <= p->y+31 || ei->rect.y <= p->y+16 || ei->rect.y <= p->y) &&
-				(ei->rect.y + ei->rect.height >= p->y+31 || ei->rect.y + ei->rect.height >= p->y) &&
-				ei->rect.x + ei->rect.width >= p->x+8 &&
-				ei->rect.x + ei->rect.width <= p->x+8 - player->speedX)
-			{
+			if (CheckCollisionLeftRight(player, ei)){
 				player->speed = 0;
 				player->speedX = 0;
 				Die(player, camera);
 			}
 			
-			if ((ei->rect.y <= p->y+31 || ei->rect.y <= p->y+16 || ei->rect.y <= p->y) &&
-				(ei->rect.y + ei->rect.height >= p->y+31 || ei->rect.y + ei->rect.height >= p->y) &&
-				ei->rect.x <= p->x+26 &&
-				ei->rect.x >= p->x+26 - player->speedX)
-			{
+			if (CheckCollisionRightLeft(player, ei)){
 				player->speed = 0;
 				player->speedX = 0;
 				Die(player, camera);
@@ -304,35 +284,19 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 			break;
 			
 			case 'C':
-			if ((ei->rect.x <= p->x+8|| ei->rect.x <= p->x+20)  &&
-				(ei->rect.x + ei->rect.width >= p->x+8 || ei->rect.x + ei->rect.width >= p->x+20) &&
-				ei->rect.y >= p->y+32 &&
-				ei->rect.y <= p->y+32 + player->speed*player->airTimer*GRAVITY)
-			{	
+			if (CheckCollisionUpDown(player, ei)){
 				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y;
 			}
 			
-			if ((ei->rect.x <= p->x+8|| ei->rect.x <= p->x+20)  &&
-				(ei->rect.x + ei->rect.width >= p->x+8 || ei->rect.x + ei->rect.width >= p->x+20) &&
-				ei->rect.y + ei->rect.height >= p->y &&
-				ei->rect.y + ei->rect.height <= p->y - player->speed*player->airTimer*GRAVITY)
-			{
+			if (CheckCollisionDownUp(player, ei)){
 				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y;
 			}
 			
-			if (ei->rect.y <= p->y+31 &&
-				ei->rect.y + ei->rect.height >= p->y+31 &&
-				ei->rect.x + ei->rect.width >= p->x+8 &&
-				ei->rect.x + ei->rect.width <= p->x+8 - player->speedX)
-			{
+			if (CheckCollisionLeftRight(player, ei)){
 				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y;
 			}
 			
-			if (ei->rect.y <= p->y+31 &&
-				ei->rect.y + ei->rect.height >= p->y+31 &&
-				ei->rect.x <= p->x+26 &&
-				ei->rect.x >= p->x+26 - player->speedX)
-			{
+			if (CheckCollisionRightLeft(player, ei)){
 				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y;
 			}
 				
@@ -346,21 +310,21 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 	if (player->speedX != 0){
 		player->position.x += player->speedX;
 		camera->target.x += player->speedX;
-		if (player->speedX > 0)
-			player->frameRec.x = player->texture.width;
-		else
-			player->frameRec.x = player->texture.width/2;
+		//if (player->speedX > 0)
+		//	player->frameRec.x = player->texture.width;
+		//else
+		//	player->frameRec.x = player->texture.width/2;
 	}
 		
     if (!hitObstacle && !player->state)
     {
 		if (!player->airTimer) player->airTimer = 1;
-        player->position.y += player->speed*player->airTimer;
+        player->position.y += player->speed;
 		camera->target.y += player->speed*player->airTimer;
         player->speed += GRAVITY*player->airTimer;
 		if (player->speed > 8) player->speed = 8;
 		player->airTimer += 0.01;
-		if (player->airTimer == 1.11) player->airTimer = 1.1;
+		if (player->airTimer == 1.51) player->airTimer = 1.5;
     }
     else {player->canJump = true; player->jumping = false; player->jumpTimer = 0; player->airTimer = 0;}
 	camera->target = player->position;
@@ -370,3 +334,44 @@ void Die(Player *player, Camera2D *camera){
 	player->position = player->respawnPos;
 	camera->target = player->respawnPos;
 }
+
+int CheckCollisionUpDown(Player *p, EnvItem *ei){
+	if (((p->position.x+6 <= ei->rect.x && p->position.x+26 >= ei->rect.x+ei->rect.width) ||
+		(p->position.x+6 >= ei->rect.x && p->position.x+6 <= ei->rect.x+ei->rect.width) ||
+		(p->position.x+26 <= ei->rect.x+ei->rect.width && p->position.x+26 >= ei->rect.x)) &&
+		ei->rect.y >= p->position.y+32 &&
+		ei->rect.y <= p->position.y+32 + (p->speed+1))
+		return 1;
+	return 0;
+}
+
+int CheckCollisionDownUp(Player *p, EnvItem *ei){
+	if (((p->position.x+7 <= ei->rect.x && p->position.x+25 >= ei->rect.x+ei->rect.width) ||
+		(p->position.x+7 >= ei->rect.x && p->position.x+7 <= ei->rect.x+ei->rect.width) ||
+		(p->position.x+25 <= ei->rect.x+ei->rect.width && p->position.x+25 >= ei->rect.x)) &&
+		ei->rect.y + ei->rect.height-1 >= p->position.y &&
+		ei->rect.y + ei->rect.height-1 <= p->position.y - (p->speed-1))
+		return 1;
+	return 0;
+}
+
+int CheckCollisionLeftRight(Player *p, EnvItem *ei){
+	if (((p->position.y <= ei->rect.y && p->position.y+31 >= ei->rect.y+ei->rect.height-1) ||
+		(p->position.y >= ei->rect.y && p->position.y <= ei->rect.y+ei->rect.height-1) ||
+		(p->position.y+31 <= ei->rect.y+ei->rect.height-1 && p->position.y+31 >= ei->rect.y)) &&
+		ei->rect.x <= p->position.x+28 &&
+		ei->rect.x >= p->position.x+28 - p->speedX)
+		return 1;
+	return 0;
+}
+
+int CheckCollisionRightLeft(Player *p, EnvItem *ei){
+	if (((p->position.y <= ei->rect.y && p->position.y+31 >= ei->rect.y+ei->rect.height-1) ||
+		(p->position.y >= ei->rect.y && p->position.y <= ei->rect.y+ei->rect.height-1) ||
+		(p->position.y+31 <= ei->rect.y+ei->rect.height-1 && p->position.y+31 >= ei->rect.y)) &&
+		ei->rect.x + ei->rect.width >= p->position.x+4 &&
+		ei->rect.x + ei->rect.width <= p->position.x+4 - p->speedX)
+		return 1;
+	return 0;
+}
+
