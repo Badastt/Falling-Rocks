@@ -1,24 +1,13 @@
 #include "raylib.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 #define MAX_FPS 60
-#define GRAVITY 0.6
+#define GRAVITY 0.5
 #define T 8.0f
-#define JUMPT 15
 #define MAXHEIGHT 80 //10*T
-//(y + gt²/2)/t
-//V = deltaS / deltaT;
-//V = Vo + at;
-//Vo = V - at;
-//Vo = y/t - at
-
-//0 = vo + gt;
-//y = vot + gt²/2
-
-//y = vo + vot + gt + gt²/2
-
-double PLAYER_JUMP_SPD = (MAXHEIGHT-2 + (GRAVITY * JUMPT * JUMPT)/2)/JUMPT;
+double PLAYER_JUMP_SPD = sqrt(2*MAXHEIGHT*GRAVITY);
 double PLAYER_HOR_SPD =  (0.25f * T);
 #define OFFSET 6
 
@@ -28,15 +17,16 @@ typedef struct {
 	double speed;
 	double speedX;
 	bool canJump;
+	bool shouldJump;
 	bool jumping;
+	int jumpCooldown;
 	bool hitA, hitD;
-	int jumpTimer;
-	float airTimer;
 	Texture2D texture;
 	Rectangle frameRec;
 	int hitObstacleL, hitObstacleR, hitObstacleD;
 	Vector2 respawnPos;
 	int state;
+	int mode;
 } Player;
 
 
@@ -73,7 +63,8 @@ int main(void)
 	Rill.size = (Vector2){32, 32};
 	Rill.speed = 0;
 	Rill.canJump = false;
-	Rill.airTimer = 1;
+	Rill.shouldJump = false;
+	Rill.jumpCooldown = 0;
 	Rill.texture = LoadTexture("data/RillDebug.png");
 	Rill.frameRec = (Rectangle){0.0f, 0.0f, (double)Rill.texture.width/1, (double)Rill.texture.height/1};
 	Rill.hitObstacleL = 0;
@@ -81,16 +72,19 @@ int main(void)
 	Rill.respawnPos = (Vector2){0, -32};
 	//Rill.respawnPos = (Vector2){1000*T, -32};
 	Rill.state = 0;
+	Rill.mode = 0;
 
 	Camera2D camera = {0};
 	camera.target = Rill.position;
 	camera.offset = (Vector2){1366/2, 768/2};	
 	camera.rotation = 0.0f;
 	camera.zoom = 4.0f;
-
+	
+	Texture2D BlockTest = LoadTexture("data/Block.png");
+	
 	//posX posY width height
 	EnvItem envItems[] = {
-        {{ -3000, -10000, 6000, 12000 }, GRAY, 'B' },
+        {{ -3000, -20000, 6000, 24000 }, GRAY, 'B' },
         {{ -80*T, -200*T, 80*T, 250*T }, BROWN, 'F' },
         {{ 102*T, -200*T, 80*T, 250*T }, BROWN, 'F' },
         {{ -20*T, 0, 100*T, 30*T }, BROWN, 'F' },
@@ -178,18 +172,46 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 		//else
 		//	player->frameRec.x = player->texture.width/2;
 	}
+	
+	if (player->shouldJump && player->canJump && !player->jumpCooldown){
+		player->speed = -PLAYER_JUMP_SPD;
+		player->shouldJump = false;
+		player->jumping = true;
+		player->jumpCooldown = 4;
+		player->mode = 0;
+	} else if (player->jumping && player->canJump)
+		player->speed = player->speed;
+	else if (!player->canJump){
+		if (player->speed < 0)
+			player->speed += GRAVITY*2;
+		else
+			player->speed = player->speed;
+		player->jumping = false;
+		player->canJump = false;
+	}
 		
-	if (!player->hitObstacleD && !player->state){
-		if (!player->airTimer) player->airTimer = 1;
+	if (!player->hitObstacleD && !player->mode){
 		player->position.y += player->speed;
 		camera->target.y += player->speed;
 		player->speed += GRAVITY;
 		if (player->speed > T) player->speed = T;
-	} else {
+	}
+	
+	if (player->mode){
 		player->canJump = true;
+		player->shouldJump = false;
 		player->jumping = false;
-		player->jumpTimer = 0;
-		player->airTimer = 0;
+		if (player->jumpCooldown)
+			player->jumpCooldown--;
+	}
+	
+	if (player->hitObstacleD && !player->mode){
+		player->canJump = true;
+		player->shouldJump = false;
+		player->jumping = false;
+		player->state = 0;
+		if (player->jumpCooldown)
+			player->jumpCooldown--;
 	}
 	
 	camera->target = player->position;
@@ -197,42 +219,31 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 
 void getInput(Player *player){
 	player->speedX = 0;
-	if (!player->state){
+	if (!player->mode){
 		if (IsKeyDown(KEY_LEFT) && !player->hitObstacleL) 
 			player->speedX -= PLAYER_HOR_SPD;
 		if (IsKeyDown(KEY_RIGHT) && !player->hitObstacleR) 
 			player->speedX += PLAYER_HOR_SPD;
 	}
 
-	if (IsKeyDown(KEY_UP) && player->canJump){
+	if (IsKeyDown(KEY_UP) && player->canJump && !player->jumping)
+		player->shouldJump = true;
+	else if (IsKeyDown(KEY_UP) && player->canJump)
 		player->jumping = true;
-		player->state = 0;
-	} else
-		player->canJump = false;
-
-	if (player->jumping && player->canJump){
-		if (!player->airTimer){
-			player->airTimer = 1;
-			player->speed = -PLAYER_JUMP_SPD;
-		}
-		//if (player->jumpTimer++ >= 24);
-		//	player->canJump = false;
-	} else {
-		if (player->jumpTimer)
-			player->speed = +1;
+	else {
 		player->jumping = false;
 		player->canJump = false;
 	}
 	
 	int hitA, hitD;
-	if (IsKeyPressed(KEY_A))
+	if (IsKeyPressed(KEY_A) && player->state > -2){
 		player->hitA = 1;
-	else
+	} else
 		player->hitA = 0;
 	
-	if (IsKeyPressed(KEY_D))
+	if (IsKeyPressed(KEY_D) && player->state < 2){
 		player->hitD = 1;
-	else
+	} else
 		player->hitD = 0;
 }
 
@@ -293,25 +304,31 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 				player->speedX = 0;
 			}
 			
-			if (player->hitA){ //ARRUMAR
-					if (ei->rect.y <= p->y+22 &&
-						ei->rect.y + ei->rect.height >= p->y+22 &&
-						ei->rect.x + ei->rect.width >= p->x-6 &&
-						p->x+32 >= ei->rect.x + ei->rect.width)
-					{
-						player->state = 1;
-					}
-			}
-		
-			if (player->hitD){ //ARRUMAR
-				if (ei->rect.y <= p->y+22 &&
-					ei->rect.y + ei->rect.height >= p->y+22 &&
-					p->x+6 <= ei->rect.x &&
-					p->x+32 >= ei->rect.x)
-				{
-					player->state = 1;
+			if (player->hitA && !player->mode) //ARRUMAR
+				if (((p->y+16 <= ei->rect.y && p->y+24 >= ei->rect.y+ei->rect.height-1) ||
+					(p->y+16 >= ei->rect.y && p->y+16 <= ei->rect.y+ei->rect.height-1) ||
+					(p->y+24 <= ei->rect.y+ei->rect.height-1 && p->y+24 >= ei->rect.y)) &&
+					ei->rect.x + ei->rect.width >= p->x-6 &&
+					p->x+32 >= ei->rect.x + ei->rect.width){
+						player->mode = 1;
+						if (player->state > -1)
+							player->state = -1;
+						else
+							player->state = -2;
 				}
-			}
+		
+			if (player->hitD && !player->mode) //ARRUMAR
+				if (((p->y+16 <= ei->rect.y && p->y+24 >= ei->rect.y+ei->rect.height-1) ||
+					(p->y+16 >= ei->rect.y && p->y+16 <= ei->rect.y+ei->rect.height-1) ||
+					(p->y+24 <= ei->rect.y+ei->rect.height-1 && p->y+24 >= ei->rect.y)) &&
+					ei->rect.x <= p->x+38 &&
+					p->x <= ei->rect.x){
+						player->mode = 1;
+						if (player->state < 1)
+							player->state = 1;
+						else
+							player->state = 2;
+				}
 			break;
 			
 			case 'B':
@@ -372,6 +389,7 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 void Die(Player *player, Camera2D *camera){
 	player->position = player->respawnPos;
 	camera->target = player->respawnPos;
+	player->jumpCooldown = 15;
 }
 
 int CheckCollisionUpDown(Player *p, EnvItem *ei, int offset){
