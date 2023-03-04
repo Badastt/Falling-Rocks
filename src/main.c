@@ -270,13 +270,13 @@ void getInput(Player *player){
 			player->position.y = player->hookPosition.y + player->hookDistance * cos(player->hookAngle);
 		}
 		
-		if (IsKeyDown(KEY_RIGHT) && player->hookDistance >= 10){
+		if (IsKeyDown(KEY_RIGHT) && player->hookDistance >= 10){ // ARRUMAR
 			if (player->hookStrength != 10 && player->canSwing){
 				player->hookStrength++;
 				player->hookAngle -= 0.05;
 			}
 		}
-		if (IsKeyDown(KEY_LEFT) && player->hookDistance >= 10){
+		if (IsKeyDown(KEY_LEFT) && player->hookDistance >= 10){ // ARRUMAR ISSO E COLISOES DO PENDULO
 			if (player->hookStrength != -10 && player->canSwing){
 				player->hookStrength--;
 				player->hookAngle += 0.05;
