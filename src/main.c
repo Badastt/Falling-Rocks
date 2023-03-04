@@ -244,7 +244,10 @@ void getInput(Player *player){
 		if (IsKeyDown(KEY_RIGHT) && !player->hitObstacleR) 
 			player->speedX += PLAYER_HOR_SPD;
 		player->hookDistance = 0;
-		player->hookAngle = M_PI/4;
+		player->hookForce = 0;
+		player->acceleration = 0;
+		player->speed = 0;
+		player->hookAngle = 0;
 	} else {
 		if (player->hookDistance < 10)
 			player->speedX = 0;
@@ -255,22 +258,29 @@ void getInput(Player *player){
 			player->speedY = 0;
 		player->canSwing = 1;
 		
-		player->hookForce = GRAVITY * sin(player->hookAngle * (M_PI / 180.0));
-		player->acceleration = (-1 * player->hookForce) / player->hookDistance;
-		player->speed += player->acceleration;
-		player->hookAngle += player->speed;
+		printf ("%lf %lf %lf %lf\n", player->hookForce, player->acceleration, player->speed, player->hookAngle);
+		
+		if (player->hookDistance >= 10){
+			player->hookForce = GRAVITY*0.2 * sin(player->hookAngle);
+			player->acceleration = (-1 * player->hookForce) / player->hookDistance;
+			player->speed += player->acceleration;
+			player->hookAngle += player->speed;
+			player->speed *= 0.99;
+			player->position.x = player->hookPosition.x - player->hookDistance * sin(player->hookAngle);
+			player->position.y = player->hookPosition.y + player->hookDistance * cos(player->hookAngle);
+		}
 		
 		if (IsKeyDown(KEY_RIGHT) && player->hookDistance >= 10){
 			if (player->hookStrength != 10 && player->canSwing){
 				player->hookStrength++;
-				player->speed *= 1.01;
+				player->hookAngle -= 0.05;
 			}
-			player->position.x = player->hookPosition.x + player->hookDistance * sin(player->hookAngle);
-			player->position.y = player->hookPosition.y + player->hookDistance * cos(player->hookAngle);
 		}
 		if (IsKeyDown(KEY_LEFT) && player->hookDistance >= 10){
-			player->speedX += (cos(player->hookAngle * (M_PI / 180.0)));
-			player->speedY -= (sin(player->hookAngle * (M_PI / 180.0)));
+			if (player->hookStrength != -10 && player->canSwing){
+				player->hookStrength--;
+				player->hookAngle += 0.05;
+			}
 		}
 	}
 	
@@ -368,7 +378,7 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 							player->state = -1;
 						else
 							player->state = -2;
-						player->hookPosition = (Vector2){p->x+16, ei->rect.y+ei->rect.height-1};
+						player->hookPosition = (Vector2){p->x, ei->rect.y+ei->rect.height-1};
 				}
 			
 			if (player->hitD && !player->mode)
@@ -383,7 +393,7 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 							player->state = 1;
 						else
 							player->state = 2;
-						player->hookPosition = (Vector2){p->x+16, ei->rect.y+ei->rect.height-1};
+						player->hookPosition = (Vector2){p->x, ei->rect.y+ei->rect.height-1};
 					}
 			
 			if (player->hitW && !player->mode)
@@ -400,7 +410,7 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 							player->state = 1;
 						else if (player->state == 1)
 							player->state = 2;
-						player->hookPosition = (Vector2){p->x+16, ei->rect.y+ei->rect.height-1};
+						player->hookPosition = (Vector2){p->x+2, ei->rect.y+ei->rect.height};
 				}
 			break;
 			
