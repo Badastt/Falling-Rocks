@@ -1,13 +1,15 @@
 #include "raylib.h"
+#include "raymath.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#define M_PI 3.14159265358979323846
 
 #define MAX_FPS 60
 #define GRAVITY 0.5
 #define T 8.0f
 #define MAXHEIGHT 80 //10*T
-double PLAYER_JUMP_SPD = sqrt(2*MAXHEIGHT*GRAVITY);
+double PLAYER_JUMP_SPD = 8.94427191; //sqrt(2*MAXHEIGHT*GRAVITY);
 double PLAYER_HOR_SPD =  (0.25f * T);
 #define OFFSET 6
 
@@ -15,18 +17,26 @@ typedef struct {
 	Vector2 position;
 	Vector2 size;
 	double speed;
+	double speedY;
 	double speedX;
+	double acceleration;
 	bool canJump;
 	bool shouldJump;
 	bool jumping;
 	int jumpCooldown;
-	bool hitA, hitD;
+	bool hitA, hitD, hitW;
 	Texture2D texture;
 	Rectangle frameRec;
 	int hitObstacleL, hitObstacleR, hitObstacleD;
 	Vector2 respawnPos;
 	int state;
 	int mode;
+	Vector2 hookPosition;
+	double hookDistance;
+	double hookAngle;
+	double hookForce;
+	int hookStrength;
+	bool canSwing;
 } Player;
 
 
@@ -62,6 +72,8 @@ int main(void)
 	//Rill.position = (Vector2){1000*T, -32};
 	Rill.size = (Vector2){32, 32};
 	Rill.speed = 0;
+	Rill.speedY = 0;
+	Rill.speedX = 0;
 	Rill.canJump = false;
 	Rill.shouldJump = false;
 	Rill.jumpCooldown = 0;
@@ -73,6 +85,11 @@ int main(void)
 	//Rill.respawnPos = (Vector2){1000*T, -32};
 	Rill.state = 0;
 	Rill.mode = 0;
+	Rill.hookPosition = (Vector2){0, 0};
+	Rill.hookDistance = 0;
+	Rill.hookForce = 0;
+	Rill.hookStrength = 0;
+	Rill.canSwing = 1;
 
 	Camera2D camera = {0};
 	camera.target = Rill.position;
@@ -80,7 +97,7 @@ int main(void)
 	camera.rotation = 0.0f;
 	camera.zoom = 4.0f;
 	
-	Texture2D BlockTest = LoadTexture("data/Block.png");
+	//Texture2D BlockTest = LoadTexture("data/Block.png");
 	
 	//posX posY width height
 	EnvItem envItems[] = {
@@ -174,38 +191,40 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 	}
 	
 	if (player->shouldJump && player->canJump && !player->jumpCooldown){
-		player->speed = -PLAYER_JUMP_SPD;
+		player->speedY = -PLAYER_JUMP_SPD;
 		player->shouldJump = false;
 		player->jumping = true;
 		player->jumpCooldown = 4;
 		player->mode = 0;
 	} else if (player->jumping && player->canJump)
-		player->speed = player->speed;
+		player->speedY = player->speedY;
 	else if (!player->canJump){
-		if (player->speed < 0)
-			player->speed += GRAVITY*2;
+		if (player->speedY < 0)
+			player->speedY += GRAVITY*2;
 		else
-			player->speed = player->speed;
+			player->speedY = player->speedY;
 		player->jumping = false;
 		player->canJump = false;
 	}
 		
 	if (!player->hitObstacleD && !player->mode){
-		player->position.y += player->speed;
-		camera->target.y += player->speed;
-		player->speed += GRAVITY;
-		if (player->speed > T) player->speed = T;
+		player->position.y += player->speedY;
+		camera->target.y += player->speedY;
+		player->speedY += GRAVITY;
+		if (player->speedY > T) player->speedY = T;
 	}
 	
-	if (player->mode){
+	if (!player->hitObstacleD && player->mode){
+		player->position.y += player->speedY;
+		camera->target.y += player->speedY;
 		player->canJump = true;
 		player->shouldJump = false;
 		player->jumping = false;
 		if (player->jumpCooldown)
 			player->jumpCooldown--;
 	}
-	
-	if (player->hitObstacleD && !player->mode){
+
+	if (player->hitObstacleD){
 		player->canJump = true;
 		player->shouldJump = false;
 		player->jumping = false;
@@ -218,14 +237,43 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 }
 
 void getInput(Player *player){
-	player->speedX = 0;
 	if (!player->mode){
+		player->speedX = 0;
 		if (IsKeyDown(KEY_LEFT) && !player->hitObstacleL) 
 			player->speedX -= PLAYER_HOR_SPD;
 		if (IsKeyDown(KEY_RIGHT) && !player->hitObstacleR) 
 			player->speedX += PLAYER_HOR_SPD;
+		player->hookDistance = 0;
+		player->hookAngle = M_PI/4;
+	} else {
+		if (player->hookDistance < 10)
+			player->speedX = 0;
+		if (IsKeyDown(KEY_DOWN) && !player->hitObstacleD && player->hookDistance <= 30){
+			player->speedY = 0.5f;
+			player->hookDistance += 0.5f;
+		} else
+			player->speedY = 0;
+		player->canSwing = 1;
+		
+		player->hookForce = GRAVITY * sin(player->hookAngle * (M_PI / 180.0));
+		player->acceleration = (-1 * player->hookForce) / player->hookDistance;
+		player->speed += player->acceleration;
+		player->hookAngle += player->speed;
+		
+		if (IsKeyDown(KEY_RIGHT) && player->hookDistance >= 10){
+			if (player->hookStrength != 10 && player->canSwing){
+				player->hookStrength++;
+				player->speed *= 1.01;
+			}
+			player->position.x = player->hookPosition.x + player->hookDistance * sin(player->hookAngle);
+			player->position.y = player->hookPosition.y + player->hookDistance * cos(player->hookAngle);
+		}
+		if (IsKeyDown(KEY_LEFT) && player->hookDistance >= 10){
+			player->speedX += (cos(player->hookAngle * (M_PI / 180.0)));
+			player->speedY -= (sin(player->hookAngle * (M_PI / 180.0)));
+		}
 	}
-
+	
 	if (IsKeyDown(KEY_UP) && player->canJump && !player->jumping)
 		player->shouldJump = true;
 	else if (IsKeyDown(KEY_UP) && player->canJump)
@@ -235,7 +283,6 @@ void getInput(Player *player){
 		player->canJump = false;
 	}
 	
-	int hitA, hitD;
 	if (IsKeyPressed(KEY_A) && player->state > -2){
 		player->hitA = 1;
 	} else
@@ -245,6 +292,11 @@ void getInput(Player *player){
 		player->hitD = 1;
 	} else
 		player->hitD = 0;
+	
+	if (IsKeyPressed(KEY_W) && player->state != -2 && player->state != 2){
+		player->hitW = 1;
+	} else
+		player->hitW = 0;
 }
 
 void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int envItemsLength){
@@ -272,7 +324,7 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 			case 'P':
 			if (CCUpDown(player, ei, OFFSET)){
 				player->hitObstacleD = 1;
-				player->speed = 0.0f;
+				player->speedY = 0.0f;
 				p->y = ei->rect.y-32;
 			}
 			break;
@@ -280,15 +332,15 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 			case 'F':
 			if (CCUpDown(player, ei, OFFSET+1)){
 				player->hitObstacleD = 1;
-				player->speed = 0.0f;
+				player->speedY = 0.0f;
 				p->y = ei->rect.y-32;
 			}
 			
-			if (CheckCollisionDownUp(player, ei, OFFSET+1)){
+			if (CCDownUp(player, ei, OFFSET+1)){
 				player->hitObstacleD = 0;
 				player->jumping = false;
 				player->canJump = false;
-				player->speed = 0.0f;
+				player->speedY = 0.0f;
 				p->y = ei->rect.y + ei->rect.height;
 			}
 			
@@ -304,30 +356,51 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 				player->speedX = 0;
 			}
 			
-			if (player->hitA && !player->mode) //ARRUMAR
+			if (player->hitA && !player->mode)
 				if (((p->y+16 <= ei->rect.y && p->y+24 >= ei->rect.y+ei->rect.height-1) ||
 					(p->y+16 >= ei->rect.y && p->y+16 <= ei->rect.y+ei->rect.height-1) ||
 					(p->y+24 <= ei->rect.y+ei->rect.height-1 && p->y+24 >= ei->rect.y)) &&
-					ei->rect.x + ei->rect.width >= p->x-6 &&
+					ei->rect.x + ei->rect.width >= p->x-OFFSET &&
 					p->x+32 >= ei->rect.x + ei->rect.width){
 						player->mode = 1;
+						player->speedY = 0;
 						if (player->state > -1)
 							player->state = -1;
 						else
 							player->state = -2;
+						player->hookPosition = (Vector2){p->x+16, ei->rect.y+ei->rect.height-1};
 				}
-		
-			if (player->hitD && !player->mode) //ARRUMAR
+			
+			if (player->hitD && !player->mode)
 				if (((p->y+16 <= ei->rect.y && p->y+24 >= ei->rect.y+ei->rect.height-1) ||
 					(p->y+16 >= ei->rect.y && p->y+16 <= ei->rect.y+ei->rect.height-1) ||
 					(p->y+24 <= ei->rect.y+ei->rect.height-1 && p->y+24 >= ei->rect.y)) &&
-					ei->rect.x <= p->x+38 &&
+					ei->rect.x <= p->x+32+OFFSET &&
 					p->x <= ei->rect.x){
 						player->mode = 1;
+						player->speedY = 0;
 						if (player->state < 1)
 							player->state = 1;
 						else
 							player->state = 2;
+						player->hookPosition = (Vector2){p->x+16, ei->rect.y+ei->rect.height-1};
+					}
+			
+			if (player->hitW && !player->mode)
+				if (((p->x+OFFSET+1 <= ei->rect.x && p->x+(32-OFFSET+1) >= ei->rect.x + ei->rect.width) ||
+					(p->x+OFFSET+1 >= ei->rect.x && p->x+OFFSET <= ei->rect.x+ei->rect.width) ||
+					(p->x+(32-OFFSET+1) <= ei->rect.x+ei->rect.width && p->x+(32-OFFSET+1) >= ei->rect.x)) &&
+					ei->rect.y + ei->rect.height-1 >= p->y-8 &&
+					ei->rect.y + ei->rect.height-1 <= p->y){
+						player->mode = 1;
+						player->speedY = 0;
+						if (player->state == -1)
+							player->state = -2;
+						else if (player->state == 0)
+							player->state = 1;
+						else if (player->state == 1)
+							player->state = 2;
+						player->hookPosition = (Vector2){p->x+16, ei->rect.y+ei->rect.height-1};
 				}
 			break;
 			
@@ -336,25 +409,25 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 			
 			case 'S':
 			if (CCUpDown(player, ei, OFFSET+1)){
-				player->speed = 0;
+				player->speedY = 0;
 				player->speedX = 0;
 				Die(player, camera);
 			}
 			
-			if (CheckCollisionDownUp(player, ei, OFFSET+1)){
-				player->speed = 0;
+			if (CCDownUp(player, ei, OFFSET+1)){
+				player->speedY = 0;
 				player->speedX = 0;
 				Die(player, camera);
 			}
 			
 			if (CCLeftRight(player, ei, OFFSET+1)){
-				player->speed = 0;
+				player->speedY = 0;
 				player->speedX = 0;
 				Die(player, camera);
 			}
 			
 			if (CCRightLeft(player, ei, OFFSET+1)){
-				player->speed = 0;
+				player->speedY = 0;
 				player->speedX = 0;
 				Die(player, camera);
 			}
@@ -366,7 +439,7 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y;
 			}
 			
-			if (CheckCollisionDownUp(player, ei, OFFSET)){
+			if (CCDownUp(player, ei, OFFSET)){
 				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y;
 			}
 			
@@ -397,7 +470,7 @@ int CheckCollisionUpDown(Player *p, EnvItem *ei, int offset){
 		(p->position.x+offset >= ei->rect.x && p->position.x+offset <= ei->rect.x+ei->rect.width) ||
 		(p->position.x+(32-offset) <= ei->rect.x+ei->rect.width && p->position.x+(32-offset) >= ei->rect.x)) &&
 		ei->rect.y >= p->position.y+32 &&
-		ei->rect.y <= p->position.y+32 + (p->speed+1))
+		ei->rect.y <= p->position.y+32 + (p->speedY+1))
 		return 1;
 	return 0;
 }
@@ -407,7 +480,7 @@ int CheckCollisionDownUp(Player *p, EnvItem *ei, int offset){
 		(p->position.x+offset >= ei->rect.x && p->position.x+offset <= ei->rect.x+ei->rect.width) ||
 		(p->position.x+(32-offset) <= ei->rect.x+ei->rect.width && p->position.x+(32-offset) >= ei->rect.x)) &&
 		ei->rect.y + ei->rect.height-1 >= p->position.y &&
-		ei->rect.y + ei->rect.height-1 <= p->position.y - (p->speed-1))
+		ei->rect.y + ei->rect.height-1 <= p->position.y - (p->speedY-1))
 		return 1;
 	return 0;
 }
