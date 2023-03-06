@@ -181,13 +181,37 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 	getInput(player);
 	checkCollisions(player, camera, envItems, envItemsLength);
 	
-	if (player->speedX != 0 ){
-		player->position.x += player->speedX;
+	if (player->hitObstacleU){
+		player->hitObstacleD = 0;
+		player->speedY = 0.0f;
+		player->position.y = (envItems+player->hitObstacleU-1)->rect.y + (envItems+player->hitObstacleU-1)->rect.height;
+		player->jumping = false;
+		player->canJump = false;
+	}
+	if (player->hitObstacleD){
+		player->speedY = 0.0f;
+		player->position.y = (envItems+player->hitObstacleD-1)->rect.y-32;
+	}
+	if (player->hitObstacleR){
+		player->speedX = 0.0f;
+		player->position.x = (envItems+player->hitObstacleR-1)->rect.x-(32-OFFSET);
+	}
+	if (player->hitObstacleL){
+		player->speedX = 0.0f;
+		player->position.x = (envItems+player->hitObstacleL-1)->rect.x + (envItems+player->hitObstacleL-1)->rect.width-OFFSET;
+	}
+	
+	player->position.y += player->speedY;
+	player->position.x += player->speedX;
+	camera->target = player->position;
+	
+	//if (player->speedX != 0 ){
+		//player->position.x += player->speedX;
 		//if (player->speedX > 0)
 		//	player->frameRec.x = player->texture.width;
 		//else
 		//	player->frameRec.x = player->texture.width/2;
-	}
+	//}
 	
 	if (player->shouldJump && player->canJump && !player->jumpCooldown){
 		player->speedY = -PLAYER_JUMP_SPD;
@@ -207,14 +231,11 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 	}
 		
 	if (!player->hitObstacleD && !player->mode){
-		player->position.y += player->speedY;
 		player->speedY += GRAVITY;
 		if (player->speedY > T) player->speedY = T;
 	}
 	
 	if (!player->hitObstacleD && player->mode){
-		player->position.y += player->speedY;
-		player->position.x += player->speedX;
 		player->canJump = true;
 		player->shouldJump = false;
 		player->jumping = false;
@@ -230,8 +251,6 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 		if (player->jumpCooldown)
 			player->jumpCooldown--;
 	}
-	
-	camera->target = player->position;
 }
 
 void getInput(Player *player){
@@ -308,10 +327,7 @@ void getInput(Player *player){
 }
 
 void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int envItemsLength){
-	
-	player->hitObstacleL = 0;
-	player->hitObstacleR = 0;
-	
+
 	int (*CCUpDown) (Player*, EnvItem*, int) = CheckCollisionUpDown;
 	int (*CCDownUp) (Player*, EnvItem*, int) = CheckCollisionDownUp;
 	int (*CCLeftRight) (Player*, EnvItem*, int);
@@ -323,47 +339,33 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 		CCLeftRight = CheckCollisionLeftRight2;
 		CCRightLeft = CheckCollisionRightLeft2;
 	}
-	player->hitObstacleD = 0;
 	
+	player->hitObstacleU = 0;
+	player->hitObstacleD = 0;
+	player->hitObstacleR = 0;
+	player->hitObstacleL = 0;
+
 	for (int i = 0; i < envItemsLength; i++){
 		EnvItem *ei = envItems + i;
 		Vector2 *p = &(player->position);
 		switch (ei->type){
 			case 'P':
-			if (CCUpDown(player, ei, OFFSET)){
-				player->hitObstacleD = 1;
-				player->speedY = 0.0f;
-				p->y = ei->rect.y-32;
-			}
+			if (CCUpDown(player, ei, OFFSET))
+				player->hitObstacleD = i+1;
 			break;
 			
 			case 'F':
-			if (CCUpDown(player, ei, OFFSET+1)){
-				player->hitObstacleD = 1;
-				player->speedY = 0.0f;
-				p->y = ei->rect.y-32;
-			}
+			if (CCUpDown(player, ei, OFFSET+1))
+				player->hitObstacleD = i+1;
 			
-			if (CCDownUp(player, ei, OFFSET+1)){
-				player->hitObstacleD = 0;
-				player->hitObstacleU = 1;
-				player->jumping = false;
-				player->canJump = false;
-				player->speedY = 0.0f;
-				p->y = ei->rect.y + ei->rect.height;
-			}
+			if (CCDownUp(player, ei, OFFSET+1))
+				player->hitObstacleU = i+1;
 			
-			if (CCLeftRight(player, ei, OFFSET)){
-				player->hitObstacleR = 1;
-				p->x = ei->rect.x-(32-OFFSET);
-				player->speedX = 0;
-			}
+			if (CCLeftRight(player, ei, OFFSET))
+				player->hitObstacleR = i+1;
 			
-			if (CCRightLeft(player, ei, OFFSET)){
-				player->hitObstacleL = 1;
-				p->x = ei->rect.x + ei->rect.width-OFFSET;
-				player->speedX = 0;
-			}
+			if (CCRightLeft(player, ei, OFFSET))
+				player->hitObstacleL = i+1;
 			
 			if (player->hitA && !player->mode)
 				if (((p->y+16 <= ei->rect.y && p->y+24 >= ei->rect.y+ei->rect.height-1) ||
@@ -372,7 +374,6 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 					ei->rect.x + ei->rect.width >= p->x-OFFSET &&
 					p->x+32 >= ei->rect.x + ei->rect.width){
 						player->mode = 1;
-						player->speedY = 0;
 						
 						if (player->state > -1)
 							player->state = -1;
@@ -389,14 +390,13 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 					ei->rect.x <= p->x+32+OFFSET &&
 					p->x <= ei->rect.x){
 						player->mode = 1;
-						player->speedY = 0;
 						
 						if (player->state < 1)
 							player->state = 1;
 						else
 							player->state = 2;
 						
-						player->hookPosition = (Vector2){ei->rect.x-26, p->y-player->speedY};
+						player->hookPosition = (Vector2){ei->rect.x-(32-OFFSET), p->y-player->speedY};
 					}
 			
 			if (player->hitW && !player->mode)
@@ -406,7 +406,6 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 					ei->rect.y + ei->rect.height-1 >= p->y-8 &&
 					ei->rect.y + ei->rect.height-1 <= p->y){
 						player->mode = 1;
-						player->speedY = 0;
 						
 						if (player->state == -1)
 							player->state = -2;
@@ -428,29 +427,17 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 			break;
 			
 			case 'S':
-			if (CCUpDown(player, ei, OFFSET+2)){
-				player->speedY = 0;
-				player->speedX = 0;
+			if (CCUpDown(player, ei, OFFSET+1))
 				Die(player, camera);
-			}
 			
-			if (CCDownUp(player, ei, OFFSET+2)){
-				player->speedY = 0;
-				player->speedX = 0;
+			if (CCDownUp(player, ei, OFFSET+1))
 				Die(player, camera);
-			}
 			
-			if (CCLeftRight(player, ei, OFFSET+2)){
-				player->speedY = 0;
-				player->speedX = 0;
+			if (CCLeftRight(player, ei, OFFSET+1))
 				Die(player, camera);
-			}
 			
-			if (CCRightLeft(player, ei, OFFSET+2)){
-				player->speedY = 0;
-				player->speedX = 0;
+			if (CCRightLeft(player, ei, OFFSET+1))
 				Die(player, camera);
-			}
 				
 			break;
 			
@@ -480,9 +467,11 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 }
 
 void Die(Player *player, Camera2D *camera){
+	player->speedX = 0;
+	player->speedY = 0;
 	player->position = player->respawnPos;
 	camera->target = player->respawnPos;
-	player->jumpCooldown = 15;
+	player->jumpCooldown = 20;
 }
 
 int CheckCollisionUpDown(Player *p, EnvItem *ei, int offset){
@@ -544,4 +533,3 @@ int CheckCollisionRightLeft2(Player *p, EnvItem *ei, int offset){
 		return 1;
 	return 0;
 }
-
