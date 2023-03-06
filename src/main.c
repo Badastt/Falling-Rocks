@@ -50,12 +50,12 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 void Die(Player *player, Camera2D *camera);
 void getInput(Player *player);
 void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int envItemsLength);
-int CheckCollisionUpDown(Player *p, EnvItem *ei, int offset);
-int CheckCollisionDownUp(Player *p, EnvItem *ei, int offset);
-int CheckCollisionLeftRight(Player *p, EnvItem *ei, int offset);
-int CheckCollisionRightLeft(Player *p, EnvItem *ei, int offset);
-int CheckCollisionLeftRight2(Player *p, EnvItem *ei, int offset);
-int CheckCollisionRightLeft2(Player *p, EnvItem *ei, int offset);
+int CheckCollisionUpDown(Player *p, EnvItem *ei, int offset, int offsetY);
+int CheckCollisionDownUp(Player *p, EnvItem *ei, int offset, int offsetY);
+int CheckCollisionLeftRight(Player *p, EnvItem *ei, int offset, int offsetY);
+int CheckCollisionRightLeft(Player *p, EnvItem *ei, int offset, int offsetY);
+int CheckCollisionLeftRight2(Player *p, EnvItem *ei, int offset, int offsetY);
+int CheckCollisionRightLeft2(Player *p, EnvItem *ei, int offset, int offsetY);
 
 
 int main(void)
@@ -118,7 +118,7 @@ int main(void)
         {{ 78*T, -65*T, 24*T, 10*T }, BROWN, 'F' },
         {{ 84*T, -67*T, 5*T, 2*T }, BROWN, 'F' },
         {{ 24*T, -138*T, 39*T, 88*T }, BROWN, 'F' },
-        {{ 90*T, -75*T, 8*T, 1*T }, BLACK, 'P' },
+        {{ 91*T, -75*T, 8*T, 1*T }, BLACK, 'P' },
         {{ 66*T, -83*T, 14*T, 1*T }, BLACK, 'P' },
         {{ 68*T, -103*T, 34*T, 10*T }, BROWN, 'F' },
         {{ 50*T, -125*T, 48*T, 11*T }, BROWN, 'F' },
@@ -265,6 +265,7 @@ void getInput(Player *player){
 		player->acceleration = 0;
 		player->speed = 0;
 		player->hookAngle = 0;
+		player->hookStrength = 0;
 	} else {
 		if (player->hookDistance < 10)
 			player->speedX = 0;
@@ -310,7 +311,7 @@ void getInput(Player *player){
 		player->canJump = false;
 	}
 	
-	if (IsKeyPressed(KEY_A) && player->state > -2){
+	if (IsKeyPressed(KEY_A) && player->state > -2000){
 		player->hitA = 1;
 	} else
 		player->hitA = 0;
@@ -328,10 +329,10 @@ void getInput(Player *player){
 
 void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int envItemsLength){
 
-	int (*CCUpDown) (Player*, EnvItem*, int) = CheckCollisionUpDown;
-	int (*CCDownUp) (Player*, EnvItem*, int) = CheckCollisionDownUp;
-	int (*CCLeftRight) (Player*, EnvItem*, int);
-	int (*CCRightLeft) (Player*, EnvItem*, int);
+	int (*CCUpDown) (Player*, EnvItem*, int, int) = CheckCollisionUpDown;
+	int (*CCDownUp) (Player*, EnvItem*, int, int) = CheckCollisionDownUp;
+	int (*CCLeftRight) (Player*, EnvItem*, int, int);
+	int (*CCRightLeft) (Player*, EnvItem*, int, int);
 	if (!player->hitObstacleD){
 		CCLeftRight = CheckCollisionLeftRight;
 		CCRightLeft = CheckCollisionRightLeft;
@@ -350,21 +351,21 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 		Vector2 *p = &(player->position);
 		switch (ei->type){
 			case 'P':
-			if (CCUpDown(player, ei, OFFSET))
+			if (CCUpDown(player, ei, OFFSET, 0))
 				player->hitObstacleD = i+1;
 			break;
 			
 			case 'F':
-			if (CCUpDown(player, ei, OFFSET+1))
+			if (CCUpDown(player, ei, OFFSET+1, 0))
 				player->hitObstacleD = i+1;
 			
-			if (CCDownUp(player, ei, OFFSET+1))
+			if (CCDownUp(player, ei, OFFSET+1, 0))
 				player->hitObstacleU = i+1;
 			
-			if (CCLeftRight(player, ei, OFFSET))
+			if (CCLeftRight(player, ei, OFFSET, 0))
 				player->hitObstacleR = i+1;
 			
-			if (CCRightLeft(player, ei, OFFSET))
+			if (CCRightLeft(player, ei, OFFSET, 0))
 				player->hitObstacleL = i+1;
 			
 			if (player->hitA && !player->mode)
@@ -427,34 +428,42 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 			break;
 			
 			case 'S':
-			if (CCUpDown(player, ei, OFFSET+1))
+			if (CCUpDown(player, ei, OFFSET+1, 0)){
 				Die(player, camera);
+				i = envItemsLength;
+			}
 			
-			if (CCDownUp(player, ei, OFFSET+1))
+			if (CCDownUp(player, ei, OFFSET+1, 0)){
 				Die(player, camera);
+				i = envItemsLength;
+			}
 			
-			if (CCLeftRight(player, ei, OFFSET+1))
+			if (CCLeftRight(player, ei, OFFSET+1, 0)){
 				Die(player, camera);
+				i = envItemsLength;
+			}
 			
-			if (CCRightLeft(player, ei, OFFSET+1))
+			if (CCRightLeft(player, ei, OFFSET+1, 0)){
 				Die(player, camera);
+				i = envItemsLength;
+			}
 				
 			break;
 			
 			case 'C':
-			if (CCUpDown(player, ei, OFFSET)){
+			if (CCUpDown(player, ei, OFFSET, 0)){
 				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y;
 			}
 			
-			if (CCDownUp(player, ei, OFFSET)){
+			if (CCDownUp(player, ei, OFFSET, 0)){
 				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y;
 			}
 			
-			if (CCLeftRight(player, ei, OFFSET)){
+			if (CCLeftRight(player, ei, OFFSET, 0)){
 				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y;
 			}
 			
-			if (CCRightLeft(player, ei, OFFSET)){
+			if (CCRightLeft(player, ei, OFFSET, 0)){
 				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y;
 			}
 				
@@ -467,6 +476,11 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 }
 
 void Die(Player *player, Camera2D *camera){
+	player->hitObstacleU = 0;
+	player->hitObstacleD = 0;
+	player->hitObstacleR = 0;
+	player->hitObstacleL = 0;
+	player->mode = 0;
 	player->speedX = 0;
 	player->speedY = 0;
 	player->position = player->respawnPos;
@@ -474,62 +488,62 @@ void Die(Player *player, Camera2D *camera){
 	player->jumpCooldown = 20;
 }
 
-int CheckCollisionUpDown(Player *p, EnvItem *ei, int offset){
-	if (((p->position.x+offset <= ei->rect.x && p->position.x+(32-offset) >= ei->rect.x+ei->rect.width) ||
-		(p->position.x+offset >= ei->rect.x && p->position.x+offset <= ei->rect.x+ei->rect.width) ||
-		(p->position.x+(32-offset) <= ei->rect.x+ei->rect.width && p->position.x+(32-offset) >= ei->rect.x)) &&
+int CheckCollisionUpDown(Player *p, EnvItem *ei, int offsetX, int offsetY){
+	if (((p->position.x+offsetX <= ei->rect.x && p->position.x+(32-offsetX) >= ei->rect.x+ei->rect.width) ||
+		(p->position.x+offsetX >= ei->rect.x && p->position.x+offsetX <= ei->rect.x+ei->rect.width) ||
+		(p->position.x+(32-offsetX) <= ei->rect.x+ei->rect.width && p->position.x+(32-offsetX) >= ei->rect.x)) &&
 		ei->rect.y >= p->position.y+32 &&
 		ei->rect.y <= p->position.y+32 + (p->speedY+1))
 		return 1;
 	return 0;
 }
 
-int CheckCollisionDownUp(Player *p, EnvItem *ei, int offset){
-	if (((p->position.x+offset <= ei->rect.x && p->position.x+(32-offset) >= ei->rect.x+ei->rect.width) ||
-		(p->position.x+offset >= ei->rect.x && p->position.x+offset <= ei->rect.x+ei->rect.width) ||
-		(p->position.x+(32-offset) <= ei->rect.x+ei->rect.width && p->position.x+(32-offset) >= ei->rect.x)) &&
+int CheckCollisionDownUp(Player *p, EnvItem *ei, int offsetX, int offsetY){
+	if (((p->position.x+offsetX <= ei->rect.x && p->position.x+(32-offsetX) >= ei->rect.x+ei->rect.width) ||
+		(p->position.x+offsetX >= ei->rect.x && p->position.x+offsetX <= ei->rect.x+ei->rect.width) ||
+		(p->position.x+(32-offsetX) <= ei->rect.x+ei->rect.width && p->position.x+(32-offsetX) >= ei->rect.x)) &&
 		ei->rect.y + ei->rect.height-1 >= p->position.y &&
 		ei->rect.y + ei->rect.height-1 <= p->position.y - (p->speedY-1))
 		return 1;
 	return 0;
 }
 
-int CheckCollisionLeftRight(Player *p, EnvItem *ei, int offset){
+int CheckCollisionLeftRight(Player *p, EnvItem *ei, int offsetX, int offsetY){
 	if (((p->position.y <= ei->rect.y && p->position.y+32 >= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y >= ei->rect.y && p->position.y <= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y+32 <= ei->rect.y+ei->rect.height-1 && p->position.y+32 >= ei->rect.y)) &&
-		ei->rect.x <= p->position.x+(32-offset) &&
-		ei->rect.x >= p->position.x+(32-offset) - p->speedX)
+		ei->rect.x <= p->position.x+(32-offsetX) &&
+		ei->rect.x >= p->position.x+(32-offsetX) - p->speedX)
 		return 1;
 	return 0;
 }
 
-int CheckCollisionRightLeft(Player *p, EnvItem *ei, int offset){
+int CheckCollisionRightLeft(Player *p, EnvItem *ei, int offsetX, int offsetY){
 	if (((p->position.y <= ei->rect.y && p->position.y+32 >= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y >= ei->rect.y && p->position.y <= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y+32 <= ei->rect.y+ei->rect.height-1 && p->position.y+32 >= ei->rect.y)) &&
-		ei->rect.x + ei->rect.width >= p->position.x+offset &&
-		ei->rect.x + ei->rect.width <= p->position.x+offset - p->speedX)
+		ei->rect.x + ei->rect.width >= p->position.x+offsetX &&
+		ei->rect.x + ei->rect.width <= p->position.x+offsetX - p->speedX)
 		return 1;
 	return 0;
 }
 
-int CheckCollisionLeftRight2(Player *p, EnvItem *ei, int offset){
+int CheckCollisionLeftRight2(Player *p, EnvItem *ei, int offsetX, int offsetY){
 	if (((p->position.y <= ei->rect.y && p->position.y+31 >= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y >= ei->rect.y && p->position.y <= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y+31 <= ei->rect.y+ei->rect.height-1 && p->position.y+31 >= ei->rect.y)) &&
-		ei->rect.x <= p->position.x+(32-offset) &&
-		ei->rect.x >= p->position.x+(32-offset) - p->speedX)
+		ei->rect.x <= p->position.x+(32-offsetX) &&
+		ei->rect.x >= p->position.x+(32-offsetX) - p->speedX)
 		return 1;
 	return 0;
 }
 
-int CheckCollisionRightLeft2(Player *p, EnvItem *ei, int offset){
+int CheckCollisionRightLeft2(Player *p, EnvItem *ei, int offsetX, int offsetY){
 	if (((p->position.y <= ei->rect.y && p->position.y+31 >= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y >= ei->rect.y && p->position.y <= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y+31 <= ei->rect.y+ei->rect.height-1 && p->position.y+31 >= ei->rect.y)) &&
-		ei->rect.x + ei->rect.width >= p->position.x+offset &&
-		ei->rect.x + ei->rect.width <= p->position.x+offset - p->speedX)
+		ei->rect.x + ei->rect.width >= p->position.x+offsetX &&
+		ei->rect.x + ei->rect.width <= p->position.x+offsetX - p->speedX)
 		return 1;
 	return 0;
 }
