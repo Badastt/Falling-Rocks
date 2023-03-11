@@ -253,6 +253,11 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 			player->jumpCooldown--;
 	}
 	
+	if ((player->hitA || player->hitD || player->hitW) && player->mode){
+		player->speedX = 0;
+		player->speedY = 0;
+	}
+	
 	player->position.y += player->speedY;
 	player->position.x += player->speedX;
 	camera->target = player->position;
@@ -278,7 +283,7 @@ void getInput(Player *player){
 		player->speedY = 0;
 		player->canSwing = 1;
 		
-		if (player->hookDistance >= 10){
+		if (player->hookDistance >= 30){
 			if (player->hookAngle == 0)
 				player->hookAngle = atan((player->hookPosition.x - (player->position.x+OFFSET+10)) / (player->hookPosition.y - (player->position.y+16)));
 			player->hookForce = GRAVITY*0.2 * sin(player->hookAngle);
@@ -300,7 +305,7 @@ void getInput(Player *player){
 		
 		if (IsKeyDown(KEY_DOWN) && !player->hitObstacleD && player->hookDistance <= 40){
 			player->speedY += 0.5f;
-			player->hookDistance += 0.5f;
+			player->hookDistance = sqrt(pow(fabs(player->position.x+OFFSET+10) - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y) - fabs(player->hookPosition.y), 2));
 			player->maxHookAngle = 0;
 		}
 		
@@ -399,15 +404,12 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 						else
 							player->state = -2;
 						
-						if (player->speedY > 0)
-							player->hookPosition = (Vector2){ei->rect.x+ei->rect.width, p->y-player->speedY+16};
-						else if (player->speedY < 0)
-							player->hookPosition = (Vector2){ei->rect.x+ei->rect.width, p->y+player->speedY+16};
-						else
-							player->hookPosition = (Vector2){ei->rect.x+ei->rect.width, p->y+16};
+						player->hookPosition = (Vector2){ei->rect.x+ei->rect.width, p->y+16};
 						
-						//player->hookDistance = sqrt(pow(fabs(player->position.x)+OFFSET+10 - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y) - fabs(player->hookPosition.y)+16, 2));
-						player->hookDistance = fabs(player->position.x) - fabs(player->hookPosition.x);
+
+						
+						player->hookDistance = sqrt(pow(fabs(player->position.x+OFFSET+10) - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y+16) - fabs(player->hookPosition.y), 2));
+						//player->hookDistance = fabs(player->position.x) - fabs(player->hookPosition.x);
 				}
 			
 			if (player->hitD && !player->mode)
@@ -423,13 +425,8 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 						else
 							player->state = 2;
 
-						if (player->speedY > 0)
-							player->hookPosition = (Vector2){ei->rect.x, p->y-player->speedY+16};
-						else if (player->speedY < 0)
-							player->hookPosition = (Vector2){ei->rect.x, p->y+player->speedY+16};
-						else
-							player->hookPosition = (Vector2){ei->rect.x, p->y+16};
-						player->hookDistance = sqrt(pow(fabs(player->position.x)+OFFSET+10 - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y) - fabs(player->hookPosition.y)+16, 2));
+						player->hookPosition = (Vector2){ei->rect.x, p->y+16};
+						player->hookDistance = sqrt(pow(fabs(player->position.x+OFFSET+10) - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y+16) - fabs(player->hookPosition.y), 2));
 						//player->hookDistance = fabs(player->position.x) - fabs(player->hookPosition.x);
 					}
 			
@@ -447,15 +444,11 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 						player->state = 1;
 					else if (player->state == 1)
 						player->state = 2;
-					
-					if (player->speedX < 0)
-						player->hookPosition = (Vector2){p->x-PLAYER_HOR_SPD+OFFSET+10, ei->rect.y+ei->rect.height};
-					else if (player->speedX > 0)
-						player->hookPosition = (Vector2){p->x+PLAYER_HOR_SPD+OFFSET+10, ei->rect.y+ei->rect.height};
-					else
+						
 						player->hookPosition = (Vector2){p->x+OFFSET+10, ei->rect.y+ei->rect.height};
 					
-					player->hookDistance = fabs(player->hookPosition.y) - fabs(player->position.y);
+					player->hookDistance = sqrt(pow(fabs(player->position.x+OFFSET+10) - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y+16) - fabs(player->hookPosition.y), 2));
+					//player->hookDistance = fabs(player->hookPosition.y) - fabs(player->position.y);
 				}
 			}
 			break;
