@@ -34,6 +34,7 @@ typedef struct {
 	Vector2 hookPosition;
 	double hookDistance;
 	double hookAngle;
+	double maxHookAngle;
 	double hookForce;
 	int hookStrength;
 	bool canSwing;
@@ -50,12 +51,12 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 void Die(Player *player, Camera2D *camera);
 void getInput(Player *player);
 void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int envItemsLength);
-int CheckCollisionUpDown(Player *p, EnvItem *ei, int offset, int offsetY);
-int CheckCollisionDownUp(Player *p, EnvItem *ei, int offset, int offsetY);
-int CheckCollisionLeftRight(Player *p, EnvItem *ei, int offset, int offsetY);
-int CheckCollisionRightLeft(Player *p, EnvItem *ei, int offset, int offsetY);
-int CheckCollisionLeftRight2(Player *p, EnvItem *ei, int offset, int offsetY);
-int CheckCollisionRightLeft2(Player *p, EnvItem *ei, int offset, int offsetY);
+int CheckCollisionUpDown(Player *p, EnvItem *ei, int offset);
+int CheckCollisionDownUp(Player *p, EnvItem *ei, int offset);
+int CheckCollisionLeftRight(Player *p, EnvItem *ei, int offset);
+int CheckCollisionRightLeft(Player *p, EnvItem *ei, int offset);
+int CheckCollisionLeftRight2(Player *p, EnvItem *ei, int offset);
+int CheckCollisionRightLeft2(Player *p, EnvItem *ei, int offset);
 
 
 int main(void)
@@ -68,8 +69,8 @@ int main(void)
 		MaximizeWindow();
 	
 	Player Rill = {0};
-	Rill.position = (Vector2){0, -32};
-	//Rill.position = (Vector2){1000*T, -32};
+	Rill.position = (Vector2){0, -32-10*T};
+	//Rill.position = (Vector2){1072, -152-33};
 	Rill.size = (Vector2){32, 32};
 	Rill.speed = 0;
 	Rill.speedY = 0;
@@ -81,12 +82,14 @@ int main(void)
 	Rill.frameRec = (Rectangle){0.0f, 0.0f, (double)Rill.texture.width/1, (double)Rill.texture.height/1};
 	Rill.hitObstacleL = 0;
 	Rill.hitObstacleR = 0;
-	Rill.respawnPos = (Vector2){0, -32};
+	Rill.respawnPos = (Vector2){0-1, -32-1-10*T};
 	//Rill.respawnPos = (Vector2){1000*T, -32};
 	Rill.state = 0;
 	Rill.mode = 0;
 	Rill.hookPosition = (Vector2){0, 0};
 	Rill.hookDistance = 0;
+	Rill.hookAngle = 0;
+	Rill.maxHookAngle = 0;
 	Rill.hookForce = 0;
 	Rill.hookStrength = 0;
 	Rill.canSwing = 1;
@@ -97,56 +100,48 @@ int main(void)
 	camera.rotation = 0.0f;
 	camera.zoom = 4.0f;
 	
-	//Texture2D BlockTest = LoadTexture("data/Block.png");
+	Texture2D map = LoadTexture("data/Teste.png");
 	
 	//posX posY width height
 	EnvItem envItems[] = {
-        {{ -3000, -20000, 6000, 24000 }, GRAY, 'B' },
-        {{ -80*T, -200*T, 80*T, 250*T }, BROWN, 'F' },
-        {{ 102*T, -200*T, 80*T, 250*T }, BROWN, 'F' },
-        {{ -20*T, 0, 100*T, 30*T }, BROWN, 'F' },
-        {{ 40*T, -10*T, 8*T, 36*T }, BROWN, 'F' },
-        {{ 55*T, -11*T, 8*T, 41*T }, BROWN, 'F' },
-        {{ 70*T, -16*T, 8*T, 46*T }, BROWN, 'F' },
-        {{ 78*T, -18*T, 24*T, 48*T }, BROWN, 'F' },
-        {{ 0*T, -40*T, 42*T, 22*T }, BROWN, 'F' },
-        {{ 42*T, -40*T, 20*T, 16*T }, BROWN, 'F' },
-        {{ 62*T, -40*T, 22*T, 12*T }, BROWN, 'F' },
-        {{ 84*T, -40*T, 18*T, 1*T }, BLACK, 'P' },
-        {{ 80*T, -44*T, 1*T, 4*T }, BLACK, 'C' },
-        {{ 80*T, -46*T, 3*T, 2*T }, RED, 'B' },
-        {{ 78*T, -65*T, 24*T, 10*T }, BROWN, 'F' },
-        {{ 84*T, -67*T, 5*T, 2*T }, BROWN, 'F' },
-        {{ 24*T, -138*T, 39*T, 88*T }, BROWN, 'F' },
-        {{ 91*T, -75*T, 8*T, 1*T }, BLACK, 'P' },
-        {{ 66*T, -83*T, 14*T, 1*T }, BLACK, 'P' },
-        {{ 68*T, -103*T, 34*T, 10*T }, BROWN, 'F' },
-        {{ 50*T, -125*T, 48*T, 11*T }, BROWN, 'F' },
-        {{ 0*T, -54*T, 4*T, 1*T }, BLACK, 'P' },
-        {{ 10*T, -68*T, 4*T, 1*T }, BLACK, 'P' },
-        {{ 20*T, -82*T, 4*T, 1*T }, BLACK, 'P' },
-        {{ 10*T, -96*T, 4*T, 1*T }, BLACK, 'P' },
-        {{ 0*T, -110*T, 4*T, 1*T }, BLACK, 'P' },
-        {{ 10*T, -124*T, 4*T, 1*T }, BLACK, 'P' },
-        {{ 20*T, -138*T, 4*T, 1*T }, BLACK, 'P' },
-        {{ 48*T, 0, 7*T, 1*T }, RED, 'S' },
-        {{ 77*T, -65*T, 1*T, 10*T }, RED, 'S' },
-        {{ 77*T, -55*T, 25*T, 1*T }, RED, 'S' },
-        {{ 77*T, -66*T, 7*T, 1*T }, RED, 'S' },
-        {{ 89*T, -66*T, 13*T, 1*T }, RED, 'S' },
-        {{ 63*T, -113*T, 1*T, 63*T }, RED, 'S' },
-        {{ 68*T, -94*T, 34*T, 1*T }, RED, 'S' },
-        {{ 63*T, -114*T, 35*T, 1*T }, RED, 'S' },
-		{{ 1000*T, 0, 100*T, 1*T}, BROWN, 'F' },
-		{{ 1010*T, -5*T, 10*T, 1*T}, BROWN, 'F' },
-		{{ 1020*T, -6*T, 10*T, 1*T}, BROWN, 'F' },
-		{{ 1030*T, -7*T, 10*T, 1*T}, BROWN, 'F' },
-		{{ 1040*T, -8*T, 10*T, 1*T}, BROWN, 'F' },
-		{{ 1050*T, -9*T, 10*T, 1*T}, BROWN, 'F' },
-		{{ 1060*T, -10*T, 10*T, 1*T}, BROWN, 'F' },
-		{{ 1070*T, -11*T, 10*T, 1*T}, BROWN, 'F' },
-		{{ 1080*T, -12*T, 10*T, 1*T}, BROWN, 'F' },
+		{{0, -6000, 2000, 6000}, GRAY, 'B'},
+		{{-200, -6200, 200, 6400}, BROWN, 'F'},
+		{{2000, -6200, 200, 6400}, BROWN, 'F'},
+		{{0, 0, 2000, 200}, BROWN, 'F'},
+		{{0, -80, 120, 80}, BROWN, 'F'},
+		{{240, -32, 48, 32}, BROWN, 'F'},
+		{{288, -64, 48, 64}, BROWN, 'F'},
+		{{336, -96, 48, 96}, BROWN, 'F'},
+		{{384, -72, 24, 8}, BLACK, 'P'},//A PARTIR DESSE
+		{{480, -96, 48, 96}, BROWN, 'F'},
+		{{528, -80, 48, 80}, BROWN, 'F'},
+		{{656, -80, 200, 80}, BROWN, 'F'},
+		{{736, -500, 40, 340}, BROWN, 'F'},
+		{{856, -280, 40, 280}, BROWN, 'F'},
+		{{896, -120, 208, 120}, BROWN, 'F'},
+		{{1104, -80, 32, 8}, BLACK, 'P'},
+		{{936, -500, 32, 300}, BROWN, 'F'},
+		{{1016, -320, 40, 320}, BROWN, 'F'},
+		{{1080, -500, 224, 300}, BROWN, 'F'},
+		{{1272, -80, 32, 8}, BLACK, 'P'},
+		{{1304, -80, 320, 80}, BROWN, 'F'},
 		
+		
+		{{0, -500, 736, 300}, BROWN, 'F'},
+		{{776, -500, 800, 120}, BROWN, 'F'},
+		
+		
+		
+		{{1072, -152, 8, 32}, BLACK, 'C'},
+        {{1072, -168, 24, 16}, RED, 'B'},
+		{{496, -128, 8, 32}, BLACK, 'C'},
+		{{496, -144, 24, 16}, RED, 'B'},
+		
+		
+		{{576, -16, 80, 16}, BROWN, 'F'},//INUTIL
+		{{1104, -16, 200, 16}, BROWN, 'F'},//INUTIL
+		{{1104, -24, 200, 8}, RED, 'S'},
+		{{576, -24, 80, 8}, RED, 'S'}
     };
 	
 	int envItemsLength = sizeof(envItems)/sizeof(envItems[0]);
@@ -162,10 +157,13 @@ int main(void)
 		BeginDrawing();
 		ClearBackground(RAYWHITE);
 		BeginMode2D(camera);
-            for (int i = 0; i < envItemsLength; i++)
+			DrawTextureRec(map, (Rectangle){0, 0, 2400, 6400}, (Vector2){-200, -6200}, WHITE);
+			for (int i = 0; i < envItemsLength; i++)
 				DrawRectangleRec(envItems[i].rect, envItems[i].color);
 			DrawTextureRec(Rill.texture, Rill.frameRec, Rill.position, WHITE);
 			DrawText("Congrats! You made it to the final!", 65*T, -135*T, 18, GOLD);
+			if (Rill.mode)
+				DrawLineV(Rill.hookPosition, (Vector2){Rill.position.x+OFFSET+10, Rill.position.y+16}, BLACK);
 		EndMode2D();
 		EndDrawing();
 	}
@@ -183,27 +181,29 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 	
 	if (player->hitObstacleU){
 		player->hitObstacleD = 0;
+		player->maxHookAngle = player->hookAngle;
+		player->position.y = (envItems+player->hitObstacleU-1)->rect.y+(envItems+player->hitObstacleU-1)->rect.height;
 		player->speedY = 0.0f;
-		player->position.y = (envItems+player->hitObstacleU-1)->rect.y + (envItems+player->hitObstacleU-1)->rect.height;
-		player->jumping = false;
-		player->canJump = false;
+		if (!player->mode){
+			player->jumping = false;
+			player->canJump = false;
+			player->speedY = -player->speedY;
+			player->speedX = 0;
+		}
+		
 	}
 	if (player->hitObstacleD){
 		player->speedY = 0.0f;
 		player->position.y = (envItems+player->hitObstacleD-1)->rect.y-32;
 	}
-	if (player->hitObstacleR){
+	if (player->hitObstacleR && player->speedX >= 0){
 		player->speedX = 0.0f;
 		player->position.x = (envItems+player->hitObstacleR-1)->rect.x-(32-OFFSET);
 	}
-	if (player->hitObstacleL){
+	if (player->hitObstacleL && player->speedX <= 0){
 		player->speedX = 0.0f;
 		player->position.x = (envItems+player->hitObstacleL-1)->rect.x + (envItems+player->hitObstacleL-1)->rect.width-OFFSET;
 	}
-	
-	player->position.y += player->speedY;
-	player->position.x += player->speedX;
-	camera->target = player->position;
 	
 	//if (player->speedX != 0 ){
 		//player->position.x += player->speedX;
@@ -248,17 +248,22 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 		player->shouldJump = false;
 		player->jumping = false;
 		player->state = 0;
+		player->mode = 0;
 		if (player->jumpCooldown)
 			player->jumpCooldown--;
 	}
+	
+	player->position.y += player->speedY;
+	player->position.x += player->speedX;
+	camera->target = player->position;
 }
 
 void getInput(Player *player){
 	if (!player->mode){
 		player->speedX = 0;
-		if (IsKeyDown(KEY_LEFT) && !player->hitObstacleL) 
+		if (IsKeyDown(KEY_LEFT)) 
 			player->speedX -= PLAYER_HOR_SPD;
-		if (IsKeyDown(KEY_RIGHT) && !player->hitObstacleR) 
+		if (IsKeyDown(KEY_RIGHT)) 
 			player->speedX += PLAYER_HOR_SPD;
 		player->hookDistance = 0;
 		player->hookForce = 0;
@@ -266,26 +271,37 @@ void getInput(Player *player){
 		player->speed = 0;
 		player->hookAngle = 0;
 		player->hookStrength = 0;
+		player->canSwing = 0;
+		player->maxHookAngle = 0;
 	} else {
-		if (player->hookDistance < 10)
-			player->speedX = 0;
-		if (IsKeyDown(KEY_DOWN) && !player->hitObstacleD && player->hookDistance <= 30){
-			player->speedY = 0.5f;
-			player->hookDistance += 0.5f;
-		} else
-			player->speedY = 0;
+		player->speedX = 0;
+		player->speedY = 0;
 		player->canSwing = 1;
 		
-		//printf ("%lf %lf %lf %lf\n", player->hookForce, player->acceleration, player->speed, player->hookAngle);
-		
 		if (player->hookDistance >= 10){
+			if (player->hookAngle == 0)
+				player->hookAngle = atan((player->hookPosition.x - (player->position.x+OFFSET+10)) / (player->hookPosition.y - (player->position.y+16)));
 			player->hookForce = GRAVITY*0.2 * sin(player->hookAngle);
 			player->acceleration = (-1 * player->hookForce) / player->hookDistance;
 			player->speed += player->acceleration;
 			player->hookAngle += player->speed;
+			if (player->hookAngle >= player->maxHookAngle && player->maxHookAngle>0){
+				player->hookAngle = player->maxHookAngle;
+				player->speed *= 0.9;
+			} else if (player->hookAngle <= player->maxHookAngle && player->maxHookAngle<0){
+				player->hookAngle = player->maxHookAngle;
+				player->speed *= 0.9;
+			}
+
 			player->speed *= 0.99;
-			player->speedX = -player->position.x + (player->hookPosition.x - player->hookDistance * sin(player->hookAngle));
+			player->speedX = -(player->position.x+OFFSET+10) + (player->hookPosition.x - player->hookDistance * sin(player->hookAngle));
 			player->speedY = -player->position.y + (player->hookPosition.y + player->hookDistance * cos(player->hookAngle));
+		}
+		
+		if (IsKeyDown(KEY_DOWN) && !player->hitObstacleD && player->hookDistance <= 40){
+			player->speedY += 0.5f;
+			player->hookDistance += 0.5f;
+			player->maxHookAngle = 0;
 		}
 		
 		if (IsKeyDown(KEY_RIGHT) && player->hookDistance >= 10){ // ARRUMAR
@@ -301,6 +317,8 @@ void getInput(Player *player){
 			}
 		}
 	}
+	//player->hookDistance = sqrt(pow(fabs(player->position.x) - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y) - fabs(player->hookPosition.y) + 16, 2));
+	//atan(player->hookPosition.x - player->position.x / player->hookPosition.y - player->position.y);
 	
 	if (IsKeyDown(KEY_UP) && player->canJump && !player->jumping)
 		player->shouldJump = true;
@@ -329,10 +347,10 @@ void getInput(Player *player){
 
 void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int envItemsLength){
 
-	int (*CCUpDown) (Player*, EnvItem*, int, int) = CheckCollisionUpDown;
-	int (*CCDownUp) (Player*, EnvItem*, int, int) = CheckCollisionDownUp;
-	int (*CCLeftRight) (Player*, EnvItem*, int, int);
-	int (*CCRightLeft) (Player*, EnvItem*, int, int);
+	int (*CCUpDown) (Player*, EnvItem*, int) = CheckCollisionUpDown;
+	int (*CCDownUp) (Player*, EnvItem*, int) = CheckCollisionDownUp;
+	int (*CCLeftRight) (Player*, EnvItem*, int);
+	int (*CCRightLeft) (Player*, EnvItem*, int);
 	if (!player->hitObstacleD){
 		CCLeftRight = CheckCollisionLeftRight;
 		CCRightLeft = CheckCollisionRightLeft;
@@ -351,21 +369,21 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 		Vector2 *p = &(player->position);
 		switch (ei->type){
 			case 'P':
-			if (CCUpDown(player, ei, OFFSET, 0))
+			if (CCUpDown(player, ei, OFFSET))
 				player->hitObstacleD = i+1;
 			break;
 			
 			case 'F':
-			if (CCUpDown(player, ei, OFFSET+1, 0))
+			if (CCUpDown(player, ei, OFFSET+1))
 				player->hitObstacleD = i+1;
 			
-			if (CCDownUp(player, ei, OFFSET+1, 0))
+			if (CCDownUp(player, ei, OFFSET+1))
 				player->hitObstacleU = i+1;
 			
-			if (CCLeftRight(player, ei, OFFSET, 0))
+			if (CCLeftRight(player, ei, OFFSET))
 				player->hitObstacleR = i+1;
 			
-			if (CCRightLeft(player, ei, OFFSET, 0))
+			if (CCRightLeft(player, ei, OFFSET))
 				player->hitObstacleL = i+1;
 			
 			if (player->hitA && !player->mode)
@@ -381,7 +399,15 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 						else
 							player->state = -2;
 						
-						player->hookPosition = (Vector2){ei->rect.x+ei->rect.width-OFFSET, p->y-player->speedY};
+						if (player->speedY > 0)
+							player->hookPosition = (Vector2){ei->rect.x+ei->rect.width, p->y-player->speedY+16};
+						else if (player->speedY < 0)
+							player->hookPosition = (Vector2){ei->rect.x+ei->rect.width, p->y+player->speedY+16};
+						else
+							player->hookPosition = (Vector2){ei->rect.x+ei->rect.width, p->y+16};
+						
+						//player->hookDistance = sqrt(pow(fabs(player->position.x)+OFFSET+10 - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y) - fabs(player->hookPosition.y)+16, 2));
+						player->hookDistance = fabs(player->position.x) - fabs(player->hookPosition.x);
 				}
 			
 			if (player->hitD && !player->mode)
@@ -396,54 +422,64 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 							player->state = 1;
 						else
 							player->state = 2;
-						
-						player->hookPosition = (Vector2){ei->rect.x-(32-OFFSET), p->y-player->speedY};
+
+						if (player->speedY > 0)
+							player->hookPosition = (Vector2){ei->rect.x, p->y-player->speedY+16};
+						else if (player->speedY < 0)
+							player->hookPosition = (Vector2){ei->rect.x, p->y+player->speedY+16};
+						else
+							player->hookPosition = (Vector2){ei->rect.x, p->y+16};
+						player->hookDistance = sqrt(pow(fabs(player->position.x)+OFFSET+10 - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y) - fabs(player->hookPosition.y)+16, 2));
+						//player->hookDistance = fabs(player->position.x) - fabs(player->hookPosition.x);
 					}
 			
-			if (player->hitW && !player->mode)
+			if (player->hitW && !player->mode){
 				if (((p->x+OFFSET+1 <= ei->rect.x && p->x+(32-OFFSET+1) >= ei->rect.x + ei->rect.width) ||
-					(p->x+OFFSET+1 >= ei->rect.x && p->x+OFFSET <= ei->rect.x+ei->rect.width) ||
-					(p->x+(32-OFFSET+1) <= ei->rect.x+ei->rect.width && p->x+(32-OFFSET+1) >= ei->rect.x)) &&
-					ei->rect.y + ei->rect.height-1 >= p->y-8 &&
-					ei->rect.y + ei->rect.height-1 <= p->y){
-						player->mode = 1;
-						
-						if (player->state == -1)
-							player->state = -2;
-						else if (player->state == 0)
-							player->state = 1;
-						else if (player->state == 1)
-							player->state = 2;
-						
-						if (player->speedX < 0)
-							player->hookPosition = (Vector2){p->x-PLAYER_HOR_SPD, ei->rect.y+ei->rect.height};
-						else if (player->speedX > 0)
-							player->hookPosition = (Vector2){p->x+PLAYER_HOR_SPD, ei->rect.y+ei->rect.height};
-						else
-							player->hookPosition = (Vector2){p->x, ei->rect.y+ei->rect.height};
+				(p->x+OFFSET+1 >= ei->rect.x && p->x+OFFSET <= ei->rect.x+ei->rect.width) ||
+				(p->x+(32-OFFSET+1) <= ei->rect.x+ei->rect.width && p->x+(32-OFFSET+1) >= ei->rect.x)) &&
+				ei->rect.y + ei->rect.height-1 >= p->y-16 &&
+				ei->rect.y + ei->rect.height-1 <= p->y){
+					player->mode = 1;
+					
+					if (player->state == -1)
+						player->state = -2;
+					else if (player->state == 0)
+						player->state = 1;
+					else if (player->state == 1)
+						player->state = 2;
+					
+					if (player->speedX < 0)
+						player->hookPosition = (Vector2){p->x-PLAYER_HOR_SPD+OFFSET+10, ei->rect.y+ei->rect.height};
+					else if (player->speedX > 0)
+						player->hookPosition = (Vector2){p->x+PLAYER_HOR_SPD+OFFSET+10, ei->rect.y+ei->rect.height};
+					else
+						player->hookPosition = (Vector2){p->x+OFFSET+10, ei->rect.y+ei->rect.height};
+					
+					player->hookDistance = fabs(player->hookPosition.y) - fabs(player->position.y);
 				}
+			}
 			break;
 			
 			case 'B':
 			break;
 			
 			case 'S':
-			if (CCUpDown(player, ei, OFFSET+1, 0)){
+			if (CCUpDown(player, ei, OFFSET+3)){
 				Die(player, camera);
 				i = envItemsLength;
 			}
 			
-			if (CCDownUp(player, ei, OFFSET+1, 0)){
+			if (CCDownUp(player, ei, OFFSET+3)){
 				Die(player, camera);
 				i = envItemsLength;
 			}
 			
-			if (CCLeftRight(player, ei, OFFSET+1, 0)){
+			if (CCLeftRight(player, ei, OFFSET+1)){
 				Die(player, camera);
 				i = envItemsLength;
 			}
 			
-			if (CCRightLeft(player, ei, OFFSET+1, 0)){
+			if (CCRightLeft(player, ei, OFFSET+1)){
 				Die(player, camera);
 				i = envItemsLength;
 			}
@@ -451,20 +487,20 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 			break;
 			
 			case 'C':
-			if (CCUpDown(player, ei, OFFSET, 0)){
-				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y;
+			if (CCUpDown(player, ei, OFFSET)){
+				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y-1;
 			}
 			
-			if (CCDownUp(player, ei, OFFSET, 0)){
-				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y;
+			if (CCDownUp(player, ei, OFFSET)){
+				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y-1;
 			}
 			
-			if (CCLeftRight(player, ei, OFFSET, 0)){
-				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y;
+			if (CCLeftRight(player, ei, OFFSET)){
+				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y-1;
 			}
 			
-			if (CCRightLeft(player, ei, OFFSET, 0)){
-				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y;
+			if (CCRightLeft(player, ei, OFFSET)){
+				player->respawnPos.x = ei->rect.x; player->respawnPos.y = ei->rect.y-1;
 			}
 				
 			break;
@@ -488,62 +524,63 @@ void Die(Player *player, Camera2D *camera){
 	player->jumpCooldown = 20;
 }
 
-int CheckCollisionUpDown(Player *p, EnvItem *ei, int offsetX, int offsetY){
+int CheckCollisionUpDown(Player *p, EnvItem *ei, int offsetX){
 	if (((p->position.x+offsetX <= ei->rect.x && p->position.x+(32-offsetX) >= ei->rect.x+ei->rect.width) ||
 		(p->position.x+offsetX >= ei->rect.x && p->position.x+offsetX <= ei->rect.x+ei->rect.width) ||
 		(p->position.x+(32-offsetX) <= ei->rect.x+ei->rect.width && p->position.x+(32-offsetX) >= ei->rect.x)) &&
 		ei->rect.y >= p->position.y+32 &&
-		ei->rect.y <= p->position.y+32 + (p->speedY+1))
+		ei->rect.y <= p->position.y+32 + (p->speedY+2))
 		return 1;
 	return 0;
 }
 
-int CheckCollisionDownUp(Player *p, EnvItem *ei, int offsetX, int offsetY){
+int CheckCollisionDownUp(Player *p, EnvItem *ei, int offsetX){
 	if (((p->position.x+offsetX <= ei->rect.x && p->position.x+(32-offsetX) >= ei->rect.x+ei->rect.width) ||
 		(p->position.x+offsetX >= ei->rect.x && p->position.x+offsetX <= ei->rect.x+ei->rect.width) ||
 		(p->position.x+(32-offsetX) <= ei->rect.x+ei->rect.width && p->position.x+(32-offsetX) >= ei->rect.x)) &&
-		ei->rect.y + ei->rect.height-1 >= p->position.y &&
-		ei->rect.y + ei->rect.height-1 <= p->position.y - (p->speedY-1))
+		ei->rect.y + ei->rect.height >= p->position.y &&
+		ei->rect.y + ei->rect.height <= p->position.y - (p->speedY))
 		return 1;
+
 	return 0;
 }
 
-int CheckCollisionLeftRight(Player *p, EnvItem *ei, int offsetX, int offsetY){
+int CheckCollisionLeftRight(Player *p, EnvItem *ei, int offsetX){
 	if (((p->position.y <= ei->rect.y && p->position.y+32 >= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y >= ei->rect.y && p->position.y <= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y+32 <= ei->rect.y+ei->rect.height-1 && p->position.y+32 >= ei->rect.y)) &&
 		ei->rect.x <= p->position.x+(32-offsetX) &&
-		ei->rect.x >= p->position.x+(32-offsetX) - p->speedX)
+		ei->rect.x >= p->position.x+(32-offsetX) - (p->speedX+2))
 		return 1;
 	return 0;
 }
 
-int CheckCollisionRightLeft(Player *p, EnvItem *ei, int offsetX, int offsetY){
+int CheckCollisionRightLeft(Player *p, EnvItem *ei, int offsetX){
 	if (((p->position.y <= ei->rect.y && p->position.y+32 >= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y >= ei->rect.y && p->position.y <= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y+32 <= ei->rect.y+ei->rect.height-1 && p->position.y+32 >= ei->rect.y)) &&
 		ei->rect.x + ei->rect.width >= p->position.x+offsetX &&
-		ei->rect.x + ei->rect.width <= p->position.x+offsetX - p->speedX)
+		ei->rect.x + ei->rect.width <= p->position.x+offsetX - (p->speedX-2))
 		return 1;
 	return 0;
 }
 
-int CheckCollisionLeftRight2(Player *p, EnvItem *ei, int offsetX, int offsetY){
+int CheckCollisionLeftRight2(Player *p, EnvItem *ei, int offsetX){
 	if (((p->position.y <= ei->rect.y && p->position.y+31 >= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y >= ei->rect.y && p->position.y <= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y+31 <= ei->rect.y+ei->rect.height-1 && p->position.y+31 >= ei->rect.y)) &&
 		ei->rect.x <= p->position.x+(32-offsetX) &&
-		ei->rect.x >= p->position.x+(32-offsetX) - p->speedX)
+		ei->rect.x >= p->position.x+(32-offsetX) - (p->speedX+2))
 		return 1;
 	return 0;
 }
 
-int CheckCollisionRightLeft2(Player *p, EnvItem *ei, int offsetX, int offsetY){
+int CheckCollisionRightLeft2(Player *p, EnvItem *ei, int offsetX){
 	if (((p->position.y <= ei->rect.y && p->position.y+31 >= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y >= ei->rect.y && p->position.y <= ei->rect.y+ei->rect.height-1) ||
 		(p->position.y+31 <= ei->rect.y+ei->rect.height-1 && p->position.y+31 >= ei->rect.y)) &&
 		ei->rect.x + ei->rect.width >= p->position.x+offsetX &&
-		ei->rect.x + ei->rect.width <= p->position.x+offsetX - p->speedX)
+		ei->rect.x + ei->rect.width <= p->position.x+offsetX - (p->speedX-2))
 		return 1;
 	return 0;
 }
