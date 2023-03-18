@@ -24,7 +24,7 @@ typedef struct {
 	bool shouldJump;
 	bool jumping;
 	int jumpCooldown;
-	bool hitA, hitD, hitW;
+	int hitA, hitD, hitW;
 	Texture2D texture;
 	Rectangle frameRec;
 	int hitObstacleL, hitObstacleR, hitObstacleD, hitObstacleU;
@@ -58,6 +58,7 @@ int CheckCollisionRightLeft(Player *p, EnvItem *ei, int offset);
 int CheckCollisionLeftRight2(Player *p, EnvItem *ei, int offset);
 int CheckCollisionRightLeft2(Player *p, EnvItem *ei, int offset);
 
+int down = 0, left = 0, right = 0;
 
 int main(void)
 {
@@ -93,6 +94,9 @@ int main(void)
 	Rill.hookForce = 0;
 	Rill.hookStrength = 0;
 	Rill.canSwing = 1;
+	Rill.hitA = 0;
+	Rill.hitD = 0;
+	Rill.hitW = 0;
 
 	Camera2D camera = {0};
 	camera.target = Rill.position;
@@ -265,6 +269,11 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 }
 
 void getInput(Player *player){
+	
+	if (player->hookDistance < 40 && down);
+	else if (player->hitW) down = 1;
+	else down = 0;
+	
 	if (!player->mode){
 		player->speedX = 0;
 		if (IsKeyDown(KEY_LEFT)) 
@@ -306,8 +315,20 @@ void getInput(Player *player){
 			player->speedY = -player->position.y + (player->hookPosition.y + player->hookDistance * cos(player->hookAngle));
 		}
 		
-		if (IsKeyDown(KEY_DOWN) && !player->hitObstacleD && player->hookDistance <= 40){
-			player->speedY += 0.5f;
+		if (!player->hitObstacleL && (player->hitA || left)){
+			left = 1;
+			player->speedX -= 1;
+		}
+		
+		if (!player->hitObstacleR && (player->hitD || right)){
+			right = 1;
+			player->speedX += 1;
+		}
+		
+		
+		if (((player->hookDistance <= 40) && (player->hitW || down)) || ((player->hookDistance <= 40) && IsKeyDown(KEY_DOWN))){
+		// IsKeyDown(KEY_DOWN) && !player->hitObstacleD && 
+			player->speedY += 1.2f;
 			player->hookDistance = sqrt(pow(fabs(player->position.x+OFFSET+10) - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y) - fabs(player->hookPosition.y), 2)); //ERRADO
 			player->maxHookAngle = 0;
 		}
@@ -335,19 +356,25 @@ void getInput(Player *player){
 		player->canJump = false;
 	}
 	
-	if (IsKeyPressed(KEY_A) && player->state > -2){
-		player->hitA = 1;
-	} else
+	if (IsKeyPressed(KEY_A) && player->state > -2)
+		player->hitA = 2;
+	else if (player->hitA > 0)
+		player->hitA--;
+	else
 		player->hitA = 0;
 	
-	if (IsKeyPressed(KEY_D) && player->state < 2){
-		player->hitD = 1;
-	} else
+	if (IsKeyPressed(KEY_D) && player->state < 2)
+		player->hitD = 2;
+	else if (player->hitD > 0)
+		player->hitD--;
+	else
 		player->hitD = 0;
 	
-	if (IsKeyPressed(KEY_W) && player->state != -2 && player->state != 2){
-		player->hitW = 1;
-	} else
+	if (IsKeyPressed(KEY_W) && player->state != -2 && player->state != 2)
+		player->hitW = 2;
+	else if (player->hitW > 0)
+		player->hitW--;
+	else
 		player->hitW = 0;
 }
 
