@@ -70,8 +70,8 @@ int main(void)
 		MaximizeWindow();
 	
 	Player Rill = {0};
-	Rill.position = (Vector2){0, -32-10*T};
-	//Rill.position = (Vector2){1072, -152-33};
+	//Rill.position = (Vector2){0, -32-10*T};
+	Rill.position = (Vector2){1646, -188-33};
 	Rill.size = (Vector2){32, 32};
 	Rill.speed = 0;
 	Rill.speedY = 0;
@@ -120,19 +120,27 @@ int main(void)
 		{{480, -96, 48, 96}, BROWN, 'F'},
 		{{528, -80, 48, 80}, BROWN, 'F'},
 		{{656, -80, 200, 80}, BROWN, 'F'},
-		{{736, -500, 40, 340}, BROWN, 'F'},
-		{{856, -280, 40, 280}, BROWN, 'F'},
-		{{896, -120, 208, 120}, BROWN, 'F'},
-		{{1104, -80, 32, 8}, BLACK, 'P'},
-		{{936, -500, 32, 300}, BROWN, 'F'},
-		{{1016, -320, 40, 320}, BROWN, 'F'},
-		{{1080, -500, 224, 300}, BROWN, 'F'},
-		{{1272, -80, 32, 8}, BLACK, 'P'},
-		{{1304, -80, 320, 80}, BROWN, 'F'},
+		{{736, -500, 40, 340}, BROWN, 'F'},//
+		{{856, -280, 40, 280}, BROWN, 'F'},//
+		{{896, -120, 208, 120}, BROWN, 'F'},//
+		{{1104, -80, 32, 8}, BLACK, 'P'},//
+		{{936, -500, 32, 300}, BROWN, 'F'},//
+		{{1016, -320, 40, 320}, BROWN, 'F'},//
+		{{1080, -500, 224, 300}, BROWN, 'F'},//
+		{{1272, -80, 32, 8}, BLACK, 'P'},//
+		{{1304, -80, 320, 80}, BROWN, 'F'},//
+		{{1566, -500, 80, 320}, BROWN, 'F'},//
+		{{1646, -188, 40, 8}, BLACK, 'P'},//
+		{{1646, -500, 320, 240}, BROWN, 'F'},//
+		{{1750, -80, 40, 8}, BLACK, 'P'},//
+		{{1790, -120, 40, 120}, BROWN, 'F'},//
+		{{1830, -120, 40, 8}, BLACK, 'P'},
+		{{1930, -160, 40, 8}, BLACK, 'P'},
+		{{1970, -160, 40, 160}, BROWN, 'F'},//
 		
 		
-		{{0, -500, 736, 300}, BROWN, 'F'},
-		{{776, -500, 800, 120}, BROWN, 'F'},
+		{{0, -500, 736, 300}, BROWN, 'F'},//
+		{{776, -500, 800, 120}, BROWN, 'F'},//
 		
 		
 		
@@ -141,11 +149,9 @@ int main(void)
 		{{496, -128, 8, 32}, BLACK, 'C'},
 		{{496, -144, 24, 16}, RED, 'B'},
 		
-		
-		{{576, -16, 80, 16}, BROWN, 'F'},//INUTIL
-		{{1104, -16, 200, 16}, BROWN, 'F'},//INUTIL
-		{{1104, -24, 200, 8}, RED, 'S'},
-		{{576, -24, 80, 8}, RED, 'S'}
+		{{1104, -24, 200, 12}, RED, 'S'},
+		{{576, -24, 80, 12}, RED, 'S'},
+		{{1624, -24, 376, 12}, RED, 'S'}
     };
 	
 	int envItemsLength = sizeof(envItems)/sizeof(envItems[0]);
@@ -162,10 +168,10 @@ int main(void)
 		ClearBackground(RAYWHITE);
 		BeginMode2D(camera);
 			DrawTextureRec(map, (Rectangle){0, 0, 2400, 6400}, (Vector2){-200, -6200}, WHITE);
-			for (int i = 0; i < envItemsLength; i++)
-				DrawRectangleRec(envItems[i].rect, envItems[i].color);
+			//for (int i = 0; i < envItemsLength; i++)
+				//DrawRectangleRec(envItems[i].rect, envItems[i].color);
 			DrawTextureRec(Rill.texture, Rill.frameRec, Rill.position, WHITE);
-			DrawText("Congrats! You made it to the final!", 65*T, -135*T, 18, GOLD);
+			//DrawText("Congrats! You made it to the final!", 65*T, -135*T, 18, GOLD);
 			if (Rill.mode)
 				DrawLineV(Rill.hookPosition, (Vector2){Rill.position.x+OFFSET+10, Rill.position.y+16}, BLACK);
 		EndMode2D();
@@ -318,12 +324,16 @@ void getInput(Player *player){
 		if (!player->hitObstacleL && (player->hitA || left)){
 			left = 1;
 			player->speedX -= 1;
-		}
+			down = 0;
+		} else
+			left = 0;
 		
 		if (!player->hitObstacleR && (player->hitD || right)){
 			right = 1;
 			player->speedX += 1;
-		}
+			down = 0;
+		} else 
+			right = 0;
 		
 		
 		if (((player->hookDistance <= 40) && (player->hitW || down)) || ((player->hookDistance <= 40) && IsKeyDown(KEY_DOWN))){
