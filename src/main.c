@@ -11,7 +11,7 @@
 #define MAXHEIGHT 80 //10*T
 double PLAYER_JUMP_SPD = 8.94427191; //sqrt(2*MAXHEIGHT*GRAVITY);
 double PLAYER_HOR_SPD =  (0.25f * T);
-#define OFFSET 6
+#define OFFSET 7
 
 typedef struct {
 	Vector2 position;
@@ -59,7 +59,7 @@ int CheckCollisionLeftRight2(Player *p, EnvItem *ei, int offset);
 int CheckCollisionRightLeft2(Player *p, EnvItem *ei, int offset);
 
 int down = 0, left = 0, right = 0;
-
+int frame = 0;
 int main(void)
 {
 	//int screenWidth = GetScreenWidth();
@@ -70,8 +70,8 @@ int main(void)
 		MaximizeWindow();
 	
 	Player Rill = {0};
-	//Rill.position = (Vector2){0, -32-10*T};
-	Rill.position = (Vector2){1646, -188-33};
+	Rill.position = (Vector2){0, -32-10*T};
+	//Rill.position = (Vector2){944, -2700-33};
 	Rill.size = (Vector2){32, 32};
 	Rill.speed = 0;
 	Rill.speedY = 0;
@@ -79,11 +79,11 @@ int main(void)
 	Rill.canJump = false;
 	Rill.shouldJump = false;
 	Rill.jumpCooldown = 0;
-	Rill.texture = LoadTexture("data/RillDebug.png");
-	Rill.frameRec = (Rectangle){0.0f, 0.0f, (double)Rill.texture.width/1, (double)Rill.texture.height/1};
+	Rill.texture = LoadTexture("data/RillWalking.png");
+	Rill.frameRec = (Rectangle){0.0f, 0.0f, (double)Rill.texture.width/9, (double)Rill.texture.height/2};
 	Rill.hitObstacleL = 0;
 	Rill.hitObstacleR = 0;
-	Rill.respawnPos = (Vector2){0-1, -32-1-10*T};
+	Rill.respawnPos = Rill.position;//(Vector2){0-1, -32-1-10*T};
 	//Rill.respawnPos = (Vector2){1000*T, -32};
 	Rill.state = 0;
 	Rill.mode = 0;
@@ -110,9 +110,13 @@ int main(void)
 	EnvItem envItems[] = {
 		{{0, -6000, 2000, 6000}, GRAY, 'B'},
 		{{-200, -6200, 200, 6400}, BROWN, 'F'},
-		{{2000, -6200, 200, 6400}, BROWN, 'F'},
+		{{2000, -6200, 200, 6400}, BROWN, 'F'},	
+		{{1792, -660, 2, 80}, WHITE, 's'},
+		{{1706, -860, 2, 280}, WHITE, 's'},
+		{{1000, -2700, 2, 844}, WHITE, 's'},
 		{{0, 0, 2000, 200}, BROWN, 'F'},
 		{{0, -80, 120, 80}, BROWN, 'F'},
+		
 		{{240, -32, 48, 32}, BROWN, 'F'},
 		{{288, -64, 48, 64}, BROWN, 'F'},
 		{{336, -96, 48, 96}, BROWN, 'F'},
@@ -134,28 +138,92 @@ int main(void)
 		{{1646, -500, 320, 240}, BROWN, 'F'},//
 		{{1750, -80, 40, 8}, BLACK, 'P'},//
 		{{1790, -120, 40, 120}, BROWN, 'F'},//
-		{{1830, -120, 40, 8}, BLACK, 'P'},
-		{{1930, -160, 40, 8}, BLACK, 'P'},
+		{{1830, -120, 40, 8}, BLACK, 'P'},//
+		{{1930, -160, 40, 8}, BLACK, 'P'},//
 		{{1970, -160, 40, 160}, BROWN, 'F'},//
+		{{1800, -652, 200, 72}, BROWN, 'F'},//
+		{{1400, -860, 300, 280}, BROWN, 'F'},
+		{{1832, -660, 80, 8}, BROWN, 'F'},
+		{{900, -1260, 300, 760}, BROWN, 'F'},
+		{{1240, -596, 80, 16}, BROWN, 'F'},
+		{{1320, -588, 80, 8}, BROWN, 'F'},
+		{{1360, -680, 40, 8}, BLACK, 'P'},
+		{{1280, -860, 120, 24}, BROWN, 'F'},
+		{{1220, -760, 80, 8}, BLACK, 'P'},
+		{{1100, -1292, 510, 292}, BROWN, 'F'},
+		{{1690, -1800, 310, 800}, BROWN, 'F'},
+		{{1610, -940, 80, 8}, BLACK, 'P'},
+		{{1666, -1008, 24, 8}, BLACK, 'P'},
+		{{1610, -1108, 24, 8}, BLACK, 'P'},
+		{{1666, -1208, 24, 8}, BLACK, 'P'},
+		{{1610, -1300, 24, 8}, BLACK, 'P'},
+		{{1560, -1300, 50, 8}, BROWN, 'F'},
+		{{1008, -2700, 992, 1272}, BROWN, 'F'},
+		{{1480, -1308, 16, 16}, BROWN, 'F'},
+		{{1330, -1308, 24, 16}, BROWN, 'F'},
+		{{1270, -1308, 16, 16}, BROWN, 'F'},
+		{{1200, -1308, 16, 16}, BROWN, 'F'},
+		{{1100, -1308, 26, 16}, BROWN, 'F'},
+		{{0, -1308, 1100, 200}, BROWN, 'F'},
+		{{960, -1500, 40, 8}, BLACK, 'P'},
+		{{600, -2700, 200, 1400}, BROWN, 'F'},
+		{{1000, -1728, 8, 300}, BROWN, 'F'},
+		{{1000, -1856, 8, 60}, BROWN, 'F'},
+		{{936, -2700, 8, 360}, BROWN, 'F'},
+		{{928, -2700, 8, 430}, BROWN, 'F'},
+		{{920, -2700, 8, 500}, BROWN, 'F'},
+		{{912, -2700, 8, 570}, BROWN, 'F'},
+		{{904, -2700, 8, 640}, BROWN, 'F'},
+		{{896, -2700, 8, 710}, BROWN, 'F'},
+		{{888, -2700, 8, 780}, BROWN, 'F'},
+		{{880, -2700, 8, 850}, BROWN, 'F'},
+		{{872, -2700, 8, 900}, BROWN, 'F'},
+		{{864, -2700, 8, 950}, BROWN, 'F'},
+		{{856, -2700, 8, 1000}, BROWN, 'F'},
+		{{848, -2700, 8, 1050}, BROWN, 'F'},
+		{{840, -2700, 8, 1100}, BROWN, 'F'},
+		{{832, -2700, 8, 1150}, BROWN, 'F'},
+		{{824, -2700, 8, 1200}, BROWN, 'F'},
+		{{816, -2700, 8, 1250}, BROWN, 'F'},
+		{{808, -2700, 8, 1300}, BROWN, 'F'},
+		{{800, -2700, 8, 1350}, BROWN, 'F'},
+		{{888, -1858, 32, 8}, BLACK, 'P'},
+		{{944, -2700, 64, 8}, BLACK, 'P'},
+		{{1832, -760, 80, 8}, BLACK, 'P'},
+		{{1740, -820, 40, 8}, BLACK, 'P'},
+		
+
+		
+		
 		
 		
 		{{0, -500, 736, 300}, BROWN, 'F'},//
 		{{776, -500, 800, 120}, BROWN, 'F'},//
 		
 		
-		
+		{{1750, -532, 8, 32}, BLACK, 'C'},
 		{{1072, -152, 8, 32}, BLACK, 'C'},
+		{{1580, -1332, 8, 32}, BLACK, 'C'},
         {{1072, -168, 24, 16}, RED, 'B'},
 		{{496, -128, 8, 32}, BLACK, 'C'},
 		{{496, -144, 24, 16}, RED, 'B'},
+		{{1000, -2692, 8, 836}, RED, 'S'},//
+		{{1100, -1300, 460, 8}, RED, 'S'},//
+		{{1800, -660, 32, 8}, RED, 'S'},//
+		{{1700, -860, 8, 280}, RED, 'S'},//
+		{{1792, -660, 8, 80}, RED, 'S'},//
+		{{1912, -660, 88, 8}, RED, 'S'},//
+		{{1104, -24, 200, 12}, RED, 'S'},//
+		{{576, -24, 80, 12}, RED, 'S'},//
+		{{1624, -24, 376, 12}, RED, 'S'},//
+		{{1320, -596, 80, 8}, RED, 'S'}//
 		
-		{{1104, -24, 200, 12}, RED, 'S'},
-		{{576, -24, 80, 12}, RED, 'S'},
-		{{1624, -24, 376, 12}, RED, 'S'}
+		
+		
     };
 	
 	int envItemsLength = sizeof(envItems)/sizeof(envItems[0]);
-	int frame = 0;
+	
 	SetTargetFPS(MAX_FPS);
 	
 	while (!WindowShouldClose())
@@ -169,7 +237,7 @@ int main(void)
 		BeginMode2D(camera);
 			DrawTextureRec(map, (Rectangle){0, 0, 2400, 6400}, (Vector2){-200, -6200}, WHITE);
 			//for (int i = 0; i < envItemsLength; i++)
-				//DrawRectangleRec(envItems[i].rect, envItems[i].color);
+			//	DrawRectangleRec(envItems[i].rect, envItems[i].color);
 			DrawTextureRec(Rill.texture, Rill.frameRec, Rill.position, WHITE);
 			//DrawText("Congrats! You made it to the final!", 65*T, -135*T, 18, GOLD);
 			if (Rill.mode)
@@ -227,7 +295,7 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 		player->speedY = -PLAYER_JUMP_SPD;
 		player->shouldJump = false;
 		player->jumping = true;
-		player->jumpCooldown = 4;
+		player->jumpCooldown = 6;
 		player->mode = 0;
 	} else if (player->jumping && player->canJump)
 		player->speedY = player->speedY;
@@ -272,11 +340,30 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 	player->position.y += player->speedY;
 	player->position.x += player->speedX;
 	camera->target = player->position;
+	
+	if (player->speedX > 0 && frame % 1 == 0 && player->hitObstacleD){
+		player->frameRec.y = 0;
+		player->frameRec.x += 32;
+		if (player->frameRec.x >= player->texture.width)
+			player->frameRec.x = 0;
+	} else if (player->speedX < 0 && frame % 1 == 0 && player->hitObstacleD){
+		player->frameRec.y = 32;
+		player->frameRec.x += 32;
+		if (player->frameRec.x >= player->texture.width)
+			player->frameRec.x = 0;
+	} else if (player->speedX < 0){
+		player->frameRec.y = 32;
+		player->frameRec.x = 0;
+	} else if (player->speedX > 0){
+		player->frameRec.y = 0;
+		player->frameRec.x = 0;
+	} else 
+		player->frameRec.x = 0;
 }
 
 void getInput(Player *player){
 	
-	if (player->hookDistance < 40 && down);
+	if (player->hookDistance < 40 && down && player->mode);
 	else if (player->hitW) down = 1;
 	else down = 0;
 	
@@ -300,7 +387,6 @@ void getInput(Player *player){
 		player->canSwing = 1;
 		
 		if (player->hookDistance >= 25){
-			//MUDAR SUPERFICIES QUE O HOOK FUNCIONA (ADICIONAR ESPINHOS) E DIMINUIR O RANGE DELE, ALÉM DISSO, COLOCAR PRO PLAYER FAZER COLISÃO COM O BLOCK QUE O HOOK FOI COLOCADO
 			if (player->hookAngle == 0)
 				player->hookAngle = atan((fabs(player->hookPosition.x) - fabs(player->position.x+OFFSET+10)) / (fabs(player->hookPosition.y) - fabs(player->position.y+16)));
 			player->hookForce = GRAVITY*0.2 * sin(player->hookAngle);
@@ -493,12 +579,12 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 			break;
 			
 			case 'S':
-			if (CCUpDown(player, ei, OFFSET+3)){
+			if (CCUpDown(player, ei, OFFSET+2) && !player->hitObstacleD){
 				Die(player, camera);
 				i = envItemsLength;
 			}
 			
-			if (CCDownUp(player, ei, OFFSET+3)){
+			if (CCDownUp(player, ei, OFFSET+2)){
 				Die(player, camera);
 				i = envItemsLength;
 			}
@@ -512,7 +598,81 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 				Die(player, camera);
 				i = envItemsLength;
 			}
-				
+			
+			break;
+			
+			case 's':
+			
+			if (player->hitA && !player->mode)
+				if (((p->y+16 <= ei->rect.y && p->y+24 >= ei->rect.y+ei->rect.height-1) ||
+					(p->y+16 >= ei->rect.y && p->y+16 <= ei->rect.y+ei->rect.height-1) ||
+					(p->y+24 <= ei->rect.y+ei->rect.height-1 && p->y+24 >= ei->rect.y)) &&
+					ei->rect.x + ei->rect.width >= p->x-OFFSET &&
+					p->x+32 >= ei->rect.x + ei->rect.width){
+						player->mode = 1;
+						
+						if (player->state > -1)
+							player->state = -1;
+						else
+							player->state = -2;
+						
+						player->hookPosition = (Vector2){ei->rect.x+ei->rect.width, p->y+16};
+						
+
+						
+						player->hookDistance = sqrt(pow(fabs(player->position.x+OFFSET+10) - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y+16) - fabs(player->hookPosition.y), 2));
+				}
+			
+			if (player->hitD && !player->mode)
+				if (((p->y+16 <= ei->rect.y && p->y+24 >= ei->rect.y+ei->rect.height-1) ||
+					(p->y+16 >= ei->rect.y && p->y+16 <= ei->rect.y+ei->rect.height-1) ||
+					(p->y+24 <= ei->rect.y+ei->rect.height-1 && p->y+24 >= ei->rect.y)) &&
+					ei->rect.x <= p->x+32+OFFSET &&
+					p->x <= ei->rect.x){
+						player->mode = 1;
+						
+						if (player->state < 1)
+							player->state = 1;
+						else
+							player->state = 2;
+
+						player->hookPosition = (Vector2){ei->rect.x, p->y+16};
+						player->hookDistance = sqrt(pow(fabs(player->position.x+OFFSET+10) - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y+16) - fabs(player->hookPosition.y), 2));
+					}
+			
+			if (player->hitW && !player->mode){
+				if (((p->x+OFFSET+1 <= ei->rect.x && p->x+(32-OFFSET+1) >= ei->rect.x + ei->rect.width) ||
+				(p->x+OFFSET+1 >= ei->rect.x && p->x+OFFSET <= ei->rect.x+ei->rect.width) ||
+				(p->x+(32-OFFSET+1) <= ei->rect.x+ei->rect.width && p->x+(32-OFFSET+1) >= ei->rect.x)) &&
+				ei->rect.y + ei->rect.height-1 >= p->y-16 &&
+				ei->rect.y + ei->rect.height-1 <= p->y){
+					player->mode = 1;
+					
+					if (player->state == -1)
+						player->state = -2;
+					else if (player->state == 0)
+						player->state = 1;
+					else if (player->state == 1)
+						player->state = 2;
+						
+					player->hookPosition = (Vector2){p->x+OFFSET+10, ei->rect.y+ei->rect.height};
+					
+					player->hookDistance = sqrt(pow(fabs(player->position.x+OFFSET+10) - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y+16) - fabs(player->hookPosition.y), 2));
+				}
+			}
+			
+			if (CCUpDown(player, ei, OFFSET+3) && player->mode)
+				player->hitObstacleD = i+1;
+			
+			if (CCDownUp(player, ei, OFFSET+3) && player->mode)
+				player->hitObstacleU = i+1;
+			
+			if (CCLeftRight(player, ei, OFFSET) && player->mode)
+				player->hitObstacleR = i+1;
+			
+			if (CCRightLeft(player, ei, OFFSET) && player->mode)
+				player->hitObstacleL = i+1;
+
 			break;
 			
 			case 'C':
@@ -551,6 +711,9 @@ void Die(Player *player, Camera2D *camera){
 	player->position = player->respawnPos;
 	camera->target = player->respawnPos;
 	player->jumpCooldown = 20;
+	left = 0;
+	right = 0;
+	down = 0;
 }
 
 int CheckCollisionUpDown(Player *p, EnvItem *ei, int offsetX){
