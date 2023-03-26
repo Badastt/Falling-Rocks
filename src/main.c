@@ -265,7 +265,7 @@ int main(void)
 			DrawTextureRec(map, (Rectangle){0, 0, 2400, 6400}, (Vector2){-200, -6200}, WHITE);
 			DrawTextureRec(Rill.texture, Rill.frameRec, Rill.position, WHITE);
 			if (Rill.mode)
-				DrawLineV(Rill.hookPosition, (Vector2){Rill.position.x+OFFSET+10, Rill.position.y+16}, BLACK);
+				DrawLineV(Rill.hookPosition, (Vector2){Rill.position.x+OFFSET+10, Rill.position.y+16}, WHITE);
 		EndMode2D();
 		EndDrawing();
 	}
