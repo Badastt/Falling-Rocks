@@ -62,8 +62,6 @@ int down = 0, left = 0, right = 0;
 int frame = 0;
 int main(void)
 {
-	//int screenWidth = GetScreenWidth();
-	//int screenHeight = GetScreenHeight();
 	InitWindow(1366, 768, "FallRocks");
 	
 	if (!IsWindowMaximized())
@@ -71,7 +69,6 @@ int main(void)
 	
 	Player Rill = {0};
 	Rill.position = (Vector2){0, -32-10*T};
-	//Rill.position = (Vector2){944, -2700-33};
 	Rill.size = (Vector2){32, 32};
 	Rill.speed = 0;
 	Rill.speedY = 0;
@@ -83,8 +80,7 @@ int main(void)
 	Rill.frameRec = (Rectangle){0.0f, 0.0f, (double)Rill.texture.width/9, (double)Rill.texture.height/2};
 	Rill.hitObstacleL = 0;
 	Rill.hitObstacleR = 0;
-	Rill.respawnPos = Rill.position;//(Vector2){0-1, -32-1-10*T};
-	//Rill.respawnPos = (Vector2){1000*T, -32};
+	Rill.respawnPos = Rill.position;
 	Rill.state = 0;
 	Rill.mode = 0;
 	Rill.hookPosition = (Vector2){0, 0};
@@ -104,7 +100,7 @@ int main(void)
 	camera.rotation = 0.0f;
 	camera.zoom = 4.0f;
 	
-	Texture2D map = LoadTexture("data/Teste.png");
+	Texture2D map = LoadTexture("data/Mapa.png");
 	
 	//posX posY width height
 	EnvItem envItems[] = {
@@ -114,34 +110,42 @@ int main(void)
 		{{1792, -660, 2, 80}, WHITE, 's'},
 		{{1706, -860, 2, 280}, WHITE, 's'},
 		{{1000, -2700, 2, 844}, WHITE, 's'},
+		{{1048, -3073, 260, 2}, WHITE, 's'},
+		{{644, -3073, 260, 2}, WHITE, 's'},
+		{{1096, -4100, 2, 332}, WHITE, 's'},
+		{{1016, -4000, 2, 300}, WHITE, 's'},
+		{{646, -4000, 2, 300}, WHITE, 's'},
+		{{406, -5000, 2, 1000}, WHITE, 's'},
+		{{472, -5000, 2, 900}, WHITE, 's'},
 		{{0, 0, 2000, 200}, BROWN, 'F'},
 		{{0, -80, 120, 80}, BROWN, 'F'},
-		
+		{{0, -500, 736, 300}, BROWN, 'F'},
+		{{776, -500, 800, 120}, BROWN, 'F'},
 		{{240, -32, 48, 32}, BROWN, 'F'},
 		{{288, -64, 48, 64}, BROWN, 'F'},
 		{{336, -96, 48, 96}, BROWN, 'F'},
-		{{384, -72, 24, 8}, BLACK, 'P'},//A PARTIR DESSE
+		{{384, -72, 24, 8}, BLACK, 'P'},
 		{{480, -96, 48, 96}, BROWN, 'F'},
 		{{528, -80, 48, 80}, BROWN, 'F'},
 		{{656, -80, 200, 80}, BROWN, 'F'},
-		{{736, -500, 40, 340}, BROWN, 'F'},//
-		{{856, -280, 40, 280}, BROWN, 'F'},//
-		{{896, -120, 208, 120}, BROWN, 'F'},//
-		{{1104, -80, 32, 8}, BLACK, 'P'},//
-		{{936, -500, 32, 300}, BROWN, 'F'},//
-		{{1016, -320, 40, 320}, BROWN, 'F'},//
-		{{1080, -500, 224, 300}, BROWN, 'F'},//
-		{{1272, -80, 32, 8}, BLACK, 'P'},//
-		{{1304, -80, 320, 80}, BROWN, 'F'},//
-		{{1566, -500, 80, 320}, BROWN, 'F'},//
-		{{1646, -188, 40, 8}, BLACK, 'P'},//
-		{{1646, -500, 320, 240}, BROWN, 'F'},//
-		{{1750, -80, 40, 8}, BLACK, 'P'},//
-		{{1790, -120, 40, 120}, BROWN, 'F'},//
-		{{1830, -120, 40, 8}, BLACK, 'P'},//
-		{{1930, -160, 40, 8}, BLACK, 'P'},//
-		{{1970, -160, 40, 160}, BROWN, 'F'},//
-		{{1800, -652, 200, 72}, BROWN, 'F'},//
+		{{736, -500, 40, 340}, BROWN, 'F'},
+		{{856, -280, 40, 280}, BROWN, 'F'},
+		{{896, -120, 208, 120}, BROWN, 'F'},
+		{{1104, -80, 32, 8}, BLACK, 'P'},
+		{{936, -500, 32, 300}, BROWN, 'F'},
+		{{1016, -320, 40, 320}, BROWN, 'F'},
+		{{1080, -500, 224, 300}, BROWN, 'F'},
+		{{1272, -80, 32, 8}, BLACK, 'P'},
+		{{1304, -80, 320, 80}, BROWN, 'F'},
+		{{1566, -500, 80, 320}, BROWN, 'F'},
+		{{1646, -188, 40, 8}, BLACK, 'P'},
+		{{1646, -500, 320, 240}, BROWN, 'F'},
+		{{1750, -80, 40, 8}, BLACK, 'P'},
+		{{1790, -120, 40, 120}, BROWN, 'F'},
+		{{1830, -120, 40, 8}, BLACK, 'P'},
+		{{1930, -160, 40, 8}, BLACK, 'P'},
+		{{1970, -160, 40, 160}, BROWN, 'F'},
+		{{1800, -652, 200, 72}, BROWN, 'F'},
 		{{1400, -860, 300, 280}, BROWN, 'F'},
 		{{1832, -660, 80, 8}, BROWN, 'F'},
 		{{900, -1260, 300, 760}, BROWN, 'F'},
@@ -191,22 +195,46 @@ int main(void)
 		{{944, -2700, 64, 8}, BLACK, 'P'},
 		{{1832, -760, 80, 8}, BLACK, 'P'},
 		{{1740, -820, 40, 8}, BLACK, 'P'},
-		
-
-		
-		
-		
-		
-		{{0, -500, 736, 300}, BROWN, 'F'},//
-		{{776, -500, 800, 120}, BROWN, 'F'},//
-		
-		
+		{{944, -3300, 64, 500}, BROWN, 'F'},
+		{{1308, -4000, 300, 1300}, BROWN, 'F'},
+		{{344, -4000, 300, 1300}, BROWN, 'F'},
+		{{1008, -2980, 40, 8}, BLACK, 'P'},
+		{{904, -2980, 40, 8}, BLACK, 'P'},
+		{{1268, -2780, 40, 8}, BLACK, 'P'},
+		{{1168, -2860, 40, 8}, BLACK, 'P'},
+		{{1168, -2940, 40, 8}, BLACK, 'P'},
+		{{1048, -3300, 260, 220}, BROWN, 'F'},
+		{{644, -2780, 40, 8}, BLACK, 'P'},
+		{{744, -2860, 40, 8}, BLACK, 'P'},
+		{{744, -2940, 40, 8}, BLACK, 'P'},
+		{{644, -3700, 260, 620}, BROWN, 'F'},
+		{{904, -3300, 40, 8}, BLACK, 'P'},
+		{{1008, -3300, 40, 8}, BLACK, 'P'},
+		{{904, -3700, 340, 300}, BROWN, 'F'},
+		{{1104, -4300, 220, 532}, BROWN, 'F'},
+		{{970, -4000, 40, 300}, BROWN, 'F'},
+		{{0, -5000, 400, 1000}, BROWN, 'F'},
+		{{480, -5000, 800, 900}, BROWN, 'F'}, 
+		{{420, -4080, 40, 8}, BLACK, 'P'},
+		{{930, -3800, 40, 8}, BLACK, 'P'},
+		{{800, -3760, 40, 8}, BLACK, 'P'},
+		{{680, -3760, 40, 8}, BLACK, 'P'},
+		{{680, -3960, 40, 8}, BLACK, 'P'},
+		{{400, -5000, 80, 8}, BLACK, 'P'},
 		{{1750, -532, 8, 32}, BLACK, 'C'},
 		{{1072, -152, 8, 32}, BLACK, 'C'},
 		{{1580, -1332, 8, 32}, BLACK, 'C'},
-        {{1072, -168, 24, 16}, RED, 'B'},
 		{{496, -128, 8, 32}, BLACK, 'C'},
-		{{496, -144, 24, 16}, RED, 'B'},
+		{{944+28, -2732, 8, 32}, BLACK, 'C'},
+		{{1204, -3732, 8, 32}, BLACK, 'C'},
+		{{1048, -3080, 260, 8}, RED, 'S'},
+		{{400, -4992, 8, 992}, RED, 'S'},
+		{{472, -4992, 8, 892}, RED, 'S'},
+		{{640, -4000, 8, 300}, RED, 'S'},
+		{{1010, -4000, 8, 300}, RED, 'S'},
+		{{640, -3708, 330, 8}, RED, 'S'},
+		{{644, -3080, 260, 8}, RED, 'S'},
+		{{1096, -4100, 8, 332}, RED, 'S'},
 		{{1000, -2692, 8, 836}, RED, 'S'},//
 		{{1100, -1300, 460, 8}, RED, 'S'},//
 		{{1800, -660, 32, 8}, RED, 'S'},//
@@ -228,7 +256,6 @@ int main(void)
 	
 	while (!WindowShouldClose())
 	{
-		//float deltaTime = GetFrameTime();
 		if (frame++ == 60) frame = 0;
 		UpdatePlayer (&Rill, &camera, envItems, envItemsLength);
 		
@@ -236,10 +263,7 @@ int main(void)
 		ClearBackground(RAYWHITE);
 		BeginMode2D(camera);
 			DrawTextureRec(map, (Rectangle){0, 0, 2400, 6400}, (Vector2){-200, -6200}, WHITE);
-			//for (int i = 0; i < envItemsLength; i++)
-			//	DrawRectangleRec(envItems[i].rect, envItems[i].color);
 			DrawTextureRec(Rill.texture, Rill.frameRec, Rill.position, WHITE);
-			//DrawText("Congrats! You made it to the final!", 65*T, -135*T, 18, GOLD);
 			if (Rill.mode)
 				DrawLineV(Rill.hookPosition, (Vector2){Rill.position.x+OFFSET+10, Rill.position.y+16}, BLACK);
 		EndMode2D();
@@ -282,14 +306,6 @@ void UpdatePlayer(Player *player, Camera2D *camera, EnvItem *envItems, int envIt
 		player->speedX = 0.0f;
 		player->position.x = (envItems+player->hitObstacleL-1)->rect.x + (envItems+player->hitObstacleL-1)->rect.width-OFFSET;
 	}
-	
-	//if (player->speedX != 0 ){
-		//player->position.x += player->speedX;
-		//if (player->speedX > 0)
-		//	player->frameRec.x = player->texture.width;
-		//else
-		//	player->frameRec.x = player->texture.width/2;
-	//}
 	
 	if (player->shouldJump && player->canJump && !player->jumpCooldown){
 		player->speedY = -PLAYER_JUMP_SPD;
@@ -420,22 +436,20 @@ void getInput(Player *player){
 			down = 0;
 		} else 
 			right = 0;
-		
-		
+			
 		if (((player->hookDistance <= 40) && (player->hitW || down)) || ((player->hookDistance <= 40) && IsKeyDown(KEY_DOWN))){
-		// IsKeyDown(KEY_DOWN) && !player->hitObstacleD && 
 			player->speedY += 1.2f;
-			player->hookDistance = sqrt(pow(fabs(player->position.x+OFFSET+10) - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y) - fabs(player->hookPosition.y), 2)); //ERRADO
+			player->hookDistance = sqrt(pow(fabs(player->position.x+OFFSET+10) - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y) - fabs(player->hookPosition.y), 2));
 			player->maxHookAngle = 0;
 		}
 		
-		if (IsKeyDown(KEY_RIGHT) && player->hookDistance >= 25){ // ARRUMAR
+		if (IsKeyDown(KEY_RIGHT) && player->hookDistance >= 25){
 			if (player->hookStrength != 10 && player->canSwing){
 				player->hookStrength++;
 				player->hookAngle -= 0.03;
 			}
 		}
-		if (IsKeyDown(KEY_LEFT) && player->hookDistance >= 25){ // ARRUMAR ISSO E COLISOES DO PENDULO
+		if (IsKeyDown(KEY_LEFT) && player->hookDistance >= 25){
 			if (player->hookStrength != -10 && player->canSwing){
 				player->hookStrength--;
 				player->hookAngle += 0.03;
@@ -563,14 +577,13 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 					if (player->state == -1)
 						player->state = -2;
 					else if (player->state == 0)
-						player->state = 1;
+						player->state = 0;
 					else if (player->state == 1)
 						player->state = 2;
 						
 					player->hookPosition = (Vector2){p->x+OFFSET+10, ei->rect.y+ei->rect.height};
 					
 					player->hookDistance = sqrt(pow(fabs(player->position.x+OFFSET+10) - fabs(player->hookPosition.x), 2) + pow(fabs(player->position.y+16) - fabs(player->hookPosition.y), 2));
-					//player->hookDistance = fabs(player->hookPosition.y) - fabs(player->position.y);
 				}
 			}
 			break;
@@ -651,7 +664,7 @@ void checkCollisions(Player *player, Camera2D *camera, EnvItem *envItems, int en
 					if (player->state == -1)
 						player->state = -2;
 					else if (player->state == 0)
-						player->state = 1;
+						player->state = 0;
 					else if (player->state == 1)
 						player->state = 2;
 						
